@@ -625,7 +625,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       image: result.secure_url,
       expoPushToken,
       otp,
-      referralCode: generateReferralCode()
+      referralCode: generateReferralCode(),
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // expires in 15 mins
     });
