@@ -896,6 +896,47 @@ async function sendOTPByEmail(unverifiedUser, otp) {
   }
 }
 
+router.post('/check-user', async (req, res) => {
+  try {
+    const { fullName, email } = req.body;
+
+    if (!email || !fullName) {
+      return res.status(400).json({ message: 'Email and full name are required.' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedFullName = fullName.trim().toLowerCase();
+
+    // Check email
+    const existingEmail = await OdinCircledbModel.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingEmail) {
+      return res.status(409).json({ error: 'Email already exists' });
+    }
+
+    // Check full name (case-insensitive)
+    const existingName = await OdinCircledbModel.findOne({
+      fullName: { $regex: `^${normalizedFullName}$`, $options: 'i' },
+    });
+
+    if (existingName) {
+      return res.status(409).json({ error: 'Full name already exists' });
+    }
+
+    // All good
+    return res.status(200).json({ available: true });
+  } catch (error) {
+    console.error('Error checking user:', error.message || error);
+    return res.status(500).json({
+      message: 'Something went wrong. Please try again later.',
+    });
+  }
+});
+
+
+
 router.get('/referral/:userId',verifyToken, async (req, res) => {
   const { userId } = req.params;
 
@@ -1815,22 +1856,7 @@ router.post('/check-user-existence',verifyToken, async (req, res) => {
   }
 });
 
-router.get('/check-email',verifyToken, async (req, res) => {
-  try {
-    const email = req.query.email?.trim().toLowerCase();
 
-    if (!email) {
-      return res.status(400).json({ message: 'email is required.' });
-    }
-
-    const user = await OdinCircledbModel.findOne({ email });
-
-    return res.json({ exists: !!user });
-  } catch (error) {
-    console.error('Error checking full name:', error.message || error);
-    return res.status(500).json({ message: 'Something went wrong. Please try again later.' });
-  }
-});
 
 router.get('/check-fullname',verifyToken, async (req, res) => {
   try {
