@@ -853,7 +853,7 @@ transporter.sendMail(mailOptions, (error, info) => {
 });
 
 // Function to send OTP to user's email
-async function sendOTPByEmail(user, otp) {
+async function sendOTPByEmail(UnverifiedUser, otp) {
   try {
       // Create a nodemailer transporter
       let transporter = nodemailer.createTransport({
@@ -866,7 +866,7 @@ async function sendOTPByEmail(user, otp) {
 
       const mailOptions = {
         from: 'odincirclex@gmail.com',
-        to: user.email,
+        to: UnverifiedUser.email,
         subject: 'Confirm your Identity',
         html: `
         <div style="font-family: Arial, sans-serif; color: #333; background-color: #fff; padding: 20px;">
@@ -875,7 +875,7 @@ async function sendOTPByEmail(user, otp) {
         <h2 style="color: #000; margin: 0;">betxcircle</h2>
         <p style="color: #666; font-size: 14px; margin: 0;">Confirm Identity</p>
       </div>
-          <p style="color: #000; margin-bottom: 10px; font-size: 16px">Hello ${user.fullName},</p>
+          <p style="color: #000; margin-bottom: 10px; font-size: 16px">Hello ${UnverifiedUser.fullName},</p>
           <h2 style="color: #000; margin-bottom: 10px; font-size: 24px">Confirm Your Identity</h2>
           <p style="font-size: 16px; margin-bottom: 20px;">Thank you for signing up to betxcircle. Here's your One Time Password to verify your account.</p>
           <h3 style="font-size: 24px; color: #000; margin-bottom: 10px; background-color: aliceblue; padding: 20px 0; text-align: center";>${otp}</h3>
