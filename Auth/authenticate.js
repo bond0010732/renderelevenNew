@@ -437,48 +437,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.post("/verifyEmailAndOTPs", async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-      return res.status(400).json({ error: "Email and OTP are required" });
-    }
-
-    const unverified = await UnverifiedUser.findOne({ email });
-
-    if (!unverified) return res.status(404).json({ error: 'No pending registration found' });
-    if (unverified.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
-
-    if (unverified.expiresAt < new Date()) {
-      await UnverifiedUser.deleteOne({ email });
-      return res.status(400).json({ error: 'OTP expired. Please register again.' });
-    }
-
-    // Create the real user
-    const newUser = await User.create({
-      fullName: unverified.fullName,
-      email: unverified.email,
-      password: unverified.password,
-      image: unverified.image,
-      expoPushToken: unverified.expoPushToken,
-      verified: true,
-      referralCode: generateReferralCode(),
-    });
-
-    // Optional: create wallet, chat, referral record
-    await WalletModel.create({ userId: newUser._id, balance: 0, cashoutbalance: 0 });
-    await ChatModel.create({ sender: newUser._id, receiver: newUser._id, message: '', createdAt: new Date() });
-
-    // Cleanup temp entry
-    await UnverifiedUser.deleteOne({ email });
-
-    res.json({ message: "User verified and account created successfully", user: newUser });
-  } catch (err) {
-    console.error('Verification error:', err.message);
-    res.status(500).json({ error: 'Failed to verify user' });
-  }
-});
 
 router.post('/verifyEmailAndOTP', async (req, res) => {
   try {
