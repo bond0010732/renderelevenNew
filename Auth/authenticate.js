@@ -436,8 +436,251 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post("/verifyEmailAndOTPs", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
 
-router.post('/register',upload.single('image'), registrationLimiter, async (req, res) => {
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Email and OTP are required" });
+    }
+
+    const unverified = await UnverifiedUser.findOne({ email });
+
+    if (!unverified) return res.status(404).json({ error: 'No pending registration found' });
+    if (unverified.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
+
+    if (unverified.expiresAt < new Date()) {
+      await UnverifiedUser.deleteOne({ email });
+      return res.status(400).json({ error: 'OTP expired. Please register again.' });
+    }
+
+    // Create the real user
+    const newUser = await User.create({
+      fullName: unverified.fullName,
+      email: unverified.email,
+      password: unverified.password,
+      image: unverified.image,
+      expoPushToken: unverified.expoPushToken,
+      verified: true,
+      referralCode: generateReferralCode(),
+    });
+
+    // Optional: create wallet, chat, referral record
+    await WalletModel.create({ userId: newUser._id, balance: 0, cashoutbalance: 0 });
+    await ChatModel.create({ sender: newUser._id, receiver: newUser._id, message: '', createdAt: new Date() });
+
+    // Cleanup temp entry
+    await UnverifiedUser.deleteOne({ email });
+
+    res.json({ message: "User verified and account created successfully", user: newUser });
+  } catch (err) {
+    console.error('Verification error:', err.message);
+    res.status(500).json({ error: 'Failed to verify user' });
+  }
+});
+
+router.post('/verifyEmailAndOTP', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find unverified user
+    const unverifiedUser = await UnverifiedUser.findOne({ email });
+    if (!unverifiedUser) {
+      return res.status(400).json({ error: 'No registration found. Please register again.' });
+    }
+
+    if (unverifiedUser.otp !== otp) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    if (unverifiedUser.expiresAt < Date.now()) {
+      await UnverifiedUser.deleteOne({ email });
+      return res.status(400).json({ error: 'OTP expired. Please register again.' });
+    }
+
+    // Check if user already exists in main collection (just in case)
+    const existingUser = await OdinCircledbModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Create user in main collection
+    const newUser = await OdinCircledbModel.create({
+      fullName: unverifiedUser.fullName,
+      email: unverifiedUser.email,
+      password: unverifiedUser.password,
+      image: unverifiedUser.image,
+      referralCode: generateReferralCode(), // You must define this helper
+    });
+
+    // --- Handle referral if exists
+    const { referralCode } = unverifiedUser;
+    if (referralCode) {
+      const referredBy = await OdinCircledbModel.findOne({ referralCode });
+
+      if (referredBy) {
+        const isAlreadyReferred = referredBy.referrals?.some(
+          ref => ref.referredUserId.toString() === newUser._id.toString()
+        );
+
+        if (!isAlreadyReferred) {
+          referredBy.referrals.push({
+            referredUserId: newUser._id,
+            codeUsed: referralCode,
+            email: newUser.email,
+          });
+          await referredBy.save();
+
+          await ReferralModel.create({
+            referredUserId: newUser._id,
+            referringUserId: referredBy._id,
+            codeUsed: referralCode,
+            email: newUser.email,
+            status: 'UnPaid',
+          });
+        }
+      }
+    }
+
+    // --- Register device
+    if (unverifiedUser.expoPushToken) {
+      let device = await Device.findOne({ expoPushToken: unverifiedUser.expoPushToken });
+
+      if (!device) {
+        device = new Device({
+          expoPushToken: unverifiedUser.expoPushToken,
+          users: [newUser._id],
+        });
+      } else if (!device.users.includes(newUser._id)) {
+        device.users.push(newUser._id);
+      }
+
+      await device.save();
+    }
+
+    // --- Create Wallet
+    const wallet = await WalletModel.create({
+      userId: newUser._id,
+      balance: 0,
+      cashoutbalance: 0,
+      transactions: [],
+    });
+
+    // --- Initial Chat Setup
+    const chat = await ChatModel.create({
+      sender: newUser._id,
+      receiver: newUser._id,
+      author: newUser._id,
+      message: '',
+      roomId: '',
+      messageId: '',
+      timestamp: Date.now(),
+      recipientId: newUser._id,
+      recipientPushToken: '',
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    newUser.chat = [chat._id];
+    await newUser.save();
+
+    // Clean up temp user
+    await UnverifiedUser.deleteOne({ email });
+
+    res.status(201).json({
+      message: 'Account verified and created successfully',
+      user: newUser,
+      wallet,
+      chat,
+    });
+
+  } catch (err) {
+    console.error('Error verifying OTP:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
+  try {
+    let { fullName, email, password, expoPushToken, referralCode } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    email = email.trim().toLowerCase();
+    fullName = fullName.trim().toLowerCase();
+
+    // Check if already verified
+    const existingVerified = await OdinCircledbModel.findOne({ email });
+    if (existingVerified) {
+      return res.status(400).json({ error: 'User already registered and verified' });
+    }
+
+    // Remove any existing unverified user with same email
+    const existingUnverified = await UnverifiedUser.findOne({ email });
+    if (existingUnverified) {
+      await UnverifiedUser.deleteOne({ email });
+    }
+
+    // Check referral
+    let referredBy = null;
+    if (referralCode) {
+      referredBy = await OdinCircledbModel.findOne({ referralCode });
+      if (!referredBy) {
+        return res.status(400).json({ error: 'Invalid referral code' });
+      }
+    }
+
+    // Upload image to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: 'image' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    if (!result || !result.secure_url) {
+      return res.status(500).json({ message: 'Image upload failed' });
+    }
+
+    // Generate hashed password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Generate OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Save temporary user (Unverified)
+    const unverifiedUser = await UnverifiedUser.create({
+      fullName,
+      email,
+      password: hashedPassword,
+      image: result.secure_url,
+      expoPushToken,
+      otp,
+      referralCode,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // expires in 15 mins
+    });
+
+    // Send OTP email
+    await sendOTPByEmail(unverifiedUser, otp);
+
+    res.status(201).json({ message: 'OTP sent to email for verification' });
+
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/registers',upload.single('image'), registrationLimiter, async (req, res) => {
   try {
     const { password, expoPushToken,phone, image, referralCode } = req.body;
 
