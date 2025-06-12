@@ -470,6 +470,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       password: unverifiedUser.password,
       image: unverifiedUser.image,
       expoPushToken: unverifiedUser.expoPushToken,
+      verified: true,
       referralCode: generateReferralCode(), // You must define this helper
     });
 
