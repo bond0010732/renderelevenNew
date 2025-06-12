@@ -13,6 +13,7 @@ const DebitModel = require('../models/DebitModel');
 const ChatModel = require('../models/ChatModel');
 const BetIntent = require('../models/BetIntent');
 const UserOtpVerification = require('../models/UserOtpVerify');
+const  UnverifiedUser = require('../models/UnverifiedUser');
 const TransOtpVerify = require('../models/TransOtpVerify');
 const BankModel = require('../models/BankModel');
 const WithdrawAuthModel = require("../models/WithdrawAuthModel")
