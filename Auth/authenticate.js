@@ -604,7 +604,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
 
 router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
   try {
-    let { fullName, email, password, expoPushToken, referralCode } = req.body;
+    let { fullName, email, password, expoPushToken,image, referralCode } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
