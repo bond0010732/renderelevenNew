@@ -1393,7 +1393,7 @@ router.post('/resendOTP',verifyToken, async (req, res) => {
       const newOTP = Math.floor(1000 + Math.random() * 9000); // Generates a 4-digit OTP
 
        // To get the user's information, let's assume there's a function to fetch the user by email
-       const user = await OdinCircledbModel.findOne({ email: email });
+       const user = await UnverifiedUser.findOne({ email: email });
        if (!user) {
          throw new Error('User not found.');
        }
@@ -1409,7 +1409,7 @@ router.post('/resendOTP',verifyToken, async (req, res) => {
       );
 
       // Update or create a new OTP record for the user by email
-      await OdinCircledbModel.findOneAndUpdate(
+      await UnverifiedUser.findOneAndUpdate(
         { email: email },
         { otp: newOTP },
         { upsert: true }
@@ -1418,7 +1418,7 @@ router.post('/resendOTP',verifyToken, async (req, res) => {
       // Send the OTP to the user's email
      
       // Call the sendOTPByEmail function with the user object and OTP
-      await sendOTPByEmail(user, newOTP);
+      await ResendOTPByEmail(user, newOTP);
 
       // Respond with success message
       res.status(200).json({ message: 'OTP has been resent to your email.' });
@@ -1427,6 +1427,50 @@ router.post('/resendOTP',verifyToken, async (req, res) => {
       res.status(500).json({ error: 'Failed to resend OTP. Please try again later.' });
   }
 });
+
+
+async function ResendOTPByEmail(user, newOTP) {
+  try {
+      // Create a nodemailer transporter
+      let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'odincirclex@gmail.com',
+          pass: 'xyqi telz pmxd evkl',
+        },
+      });
+
+      const mailOptions = {
+        from: 'odincirclex@gmail.com',
+        to: user.email,
+        subject: 'Confirm your Identity',
+        html: `
+        <div style="font-family: Arial, sans-serif; color: #333; background-color: #fff; padding: 20px;">
+           <!-- Header -->
+      <div style="text-align: center; padding: 10px 0; border-bottom: 2px solid #000;">
+        <h2 style="color: #000; margin: 0;">betxcircle</h2>
+        <p style="color: #666; font-size: 14px; margin: 0;">Confirm Identity</p>
+      </div>
+          <p style="color: #000; margin-bottom: 10px; font-size: 16px">Hello ${user.fullName},</p>
+          <h2 style="color: #000; margin-bottom: 10px; font-size: 24px">Confirm Your Identity</h2>
+          <p style="font-size: 16px; margin-bottom: 20px;">Thank you for signing up to betxcircle. Here's your One Time Password to verify your account.</p>
+          <h3 style="font-size: 24px; color: #000; margin-bottom: 10px; background-color: aliceblue; padding: 20px 0; text-align: center";>${otp}</h3>
+          <p style="font-size: 16px; margin-bottom: 20px;">If you have any complaint please contact our support team immediately via in-app or email.</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">odincirclex@gmail.com</p>
+          <p style="font-size: 16px;">Please use this OTP to complete your registration process.</p>
+        </div>`, // HTML content with inline CSS styles
+  
+    };
+
+      // Send the email
+      await transporter.sendMail(mailOptions);
+
+      console.log('Resend OTP email sent successfully.');
+  } catch (error) {
+      console.error('Error sending OTP email:', error.message);
+      throw new Error('Failed to send OTP email.');
+  }
+}
 
 // Update user's profile image
 router.put('/updateUserProfileImage/:userId', upload.single('image'),verifyToken, async (req, res) => {
