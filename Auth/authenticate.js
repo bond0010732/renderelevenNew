@@ -131,6 +131,23 @@ router.get('/userloser/:userId',verifyToken, async (req, res) => {
   }
 });
 
+// ✅ GET user by ID — return email, username, wallet balance, etc.
+router.get('/api/user/:id', async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const user = await OdinCircledbModel.findById(userId).select('email fullName wallet');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user by ID:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 router.post('/verify-otpwithdraw',verifyToken, async (req, res) => {
   const { userId, otp, totalAmount } = req.body;
