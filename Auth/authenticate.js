@@ -280,7 +280,7 @@ router.post("/paystack/withdraw",verifyToken, async (req, res) => {
 
 
 
-router.post('/paystack/initialize',verifyToken, async (req, res) => {
+router.post('/paystack/initialize', async (req, res) => {
   const { email, amount, userId } = req.body;
   const paystackAmount = amount * 100; // Convert to kobo
 
