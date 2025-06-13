@@ -132,8 +132,156 @@ router.get('/userloser/:userId',verifyToken, async (req, res) => {
 });
 
 
+router.post('/verify-otpwithdraw',verifyToken, async (req, res) => {
+  const { userId, otp, totalAmount } = req.body;
 
-router.post("/paystack/withdraw",verifyToken, async (req, res) => {
+  try {
+    // 1️⃣ Check OTP
+    const otpRecord = await TransOtpVerify.findOne({ userId, otp });
+    if (!otpRecord) {
+      return res.status(400).send('Invalid OTP');
+    }
+
+    // 2️⃣ Fetch User
+    const user = await OdinCircledbModel.findById(userId);
+    if (!user) {
+      return res.status(400).send('User not found');
+    }
+
+    // 3️⃣ Validate Amount
+    const withdrawalAmount = parseFloat(totalAmount);
+    if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
+      return res.status(400).send('Invalid amount');
+    }
+
+    // 4️⃣ Check Balance
+    if (user.wallet.cashoutbalance < withdrawalAmount) {
+      return res.status(400).send('Insufficient balance');
+    }
+
+    // 5️⃣ Clear OTP
+    await TransOtpVerify.deleteOne({ userId, otp });
+
+    // ✅ Success
+    return res.status(200).json({
+      message: 'OTP verified successfully. Sufficient balance confirmed.',
+    });
+
+  } catch (error) {
+    console.error('Error during OTP verification:', error.message);
+    return res.status(500).json({
+      message: 'An error occurred during the OTP verification process.',
+      error: error.message,
+    });
+  }
+});
+
+
+const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, message, fullName }) => {
+  const otpRecord = await TransOtpVerify.findOne({ userId, otp });
+  //if (!otpRecord) throw new Error('Invalid OTP');
+
+  const user = await OdinCircledbModel.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  const withdrawalAmount = parseFloat(totalAmount);
+  if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
+    throw new Error('Invalid amount');
+  }
+
+  if (user.wallet.cashoutbalance < withdrawalAmount) {
+    throw new Error('Insufficient balance');
+  }
+
+  user.wallet.cashoutbalance -= withdrawalAmount;
+  await user.save();
+
+  const transaction = new DebitModel({
+    userId,
+    amount,
+    fullName,
+    WithdrawStatus: 'success',
+    date: new Date(),
+  });
+  await transaction.save();
+
+  await TransOtpVerify.deleteOne({ userId, otp });
+
+  // ✅ Send Email
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'odincirclex@gmail.com',
+      pass: 'xyqi telz pmxd evkl', // Make sure this is an app password, not your Gmail password
+    },
+  });
+
+  const emailOptions = {
+    from: 'odincirclex@gmail.com',
+    to: user.email,
+    subject: 'Withdrawal Notification',
+    html: `
+    <div style="font-family: Arial, sans-serif; color: #333; background-color: #f8f8f8; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+      <div style="text-align: center; background-color:rgb(12, 14, 16); color: white; padding: 10px 0; border-radius: 10px 10px 0 0;">
+        <h4 style="margin: 0; font-size: 14px;">Withdrawal Notification</h4>
+      </div>
+      <div style="padding: 20px; background-color: #fff; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <p style="font-size: 16px; margin-bottom: 10px;">Hello <strong>${user.fullName}</strong>,</p>
+        <p style="font-size: 16px; margin-bottom: 10px; text-align: center">Your withdrawal of <strong>NGN ${withdrawalAmount.toFixed(2)}</strong> has been successfully processed.</p>
+        <p style="font-size: 16px; margin-bottom: 10px; text-align: center"><strong>Transaction Details:</strong></p>
+        <p style="font-size: 14px; margin-left: 20px; text-align: center">
+          Transaction ID: <strong>${transaction._id}</strong><br>
+          Amount: <strong>NGN ${amount}</strong><br>
+          <span style="color:rgb(205, 9, 9)">Status: <strong>Success</strong></span><br>
+          Date: <strong>${new Date().toLocaleString()}</strong>
+        </p>
+        <p style="font-size: 16px; margin-top: 20px;">If you have any questions or concerns, please contact us at <a href="mailto:support@example.com" style="color: #007bff;">odincirclex@gmail.com</a>.</p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #777;">
+        <p style="margin: 0;">Thank you for using our service.</p>
+      </div>
+    </div>
+    `,
+  };
+
+  await transporter.sendMail(emailOptions);
+
+  // ✅ Send Notification
+  const device = await Device.findOne({ users: { $elemMatch: { _id: userId } } });
+  if (!device) throw new Error('Device not found.');
+
+  if (!Expo.isExpoPushToken(device.expoPushToken)) {
+    throw new Error('Invalid Expo Push Token');
+  }
+
+  const notificationMessage = {
+    to: device.expoPushToken,
+    sound: 'default',
+    title: title || 'Withdrawal Notification',
+    body: message || `Your withdrawal of NGN ${withdrawalAmount.toFixed(2)} was successful`,
+  };
+
+  const chunks = expo.chunkPushNotifications([notificationMessage]);
+  const tickets = [];
+
+  for (const chunk of chunks) {
+    try {
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      tickets.push(...ticketChunk);
+    } catch (err) {
+      console.error('Error sending notification chunk:', err);
+      throw new Error('Notification failed to send.');
+    }
+  }
+
+  return {
+    message: 'Withdrawal verified, email and notification sent successfully.',
+    transactionId: transaction._id,
+    tickets,
+  };
+};
+
+router.post("/paystack/withdraw", async (req, res) => {
   const { name, account_number, bank_name, amount, currency, otp, userId, title, message, fullName } = req.body;
 
      //console.log('userId, otp, name, fullName')
@@ -1696,154 +1844,7 @@ router.post('/send-otptransaction',verifyToken, async (req, res) => {
 });
 
 
-router.post('/verify-otpwithdraw',verifyToken, async (req, res) => {
-  const { userId, otp, totalAmount } = req.body;
 
-  try {
-    // 1️⃣ Check OTP
-    const otpRecord = await TransOtpVerify.findOne({ userId, otp });
-    if (!otpRecord) {
-      return res.status(400).send('Invalid OTP');
-    }
-
-    // 2️⃣ Fetch User
-    const user = await OdinCircledbModel.findById(userId);
-    if (!user) {
-      return res.status(400).send('User not found');
-    }
-
-    // 3️⃣ Validate Amount
-    const withdrawalAmount = parseFloat(totalAmount);
-    if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
-      return res.status(400).send('Invalid amount');
-    }
-
-    // 4️⃣ Check Balance
-    if (user.wallet.cashoutbalance < withdrawalAmount) {
-      return res.status(400).send('Insufficient balance');
-    }
-
-    // 5️⃣ Clear OTP
-    await TransOtpVerify.deleteOne({ userId, otp });
-
-    // ✅ Success
-    return res.status(200).json({
-      message: 'OTP verified successfully. Sufficient balance confirmed.',
-    });
-
-  } catch (error) {
-    console.error('Error during OTP verification:', error.message);
-    return res.status(500).json({
-      message: 'An error occurred during the OTP verification process.',
-      error: error.message,
-    });
-  }
-});
-
-
-const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, message, fullName }) => {
-  const otpRecord = await TransOtpVerify.findOne({ userId, otp });
-  //if (!otpRecord) throw new Error('Invalid OTP');
-
-  const user = await OdinCircledbModel.findById(userId);
-  if (!user) throw new Error('User not found');
-
-  const withdrawalAmount = parseFloat(totalAmount);
-  if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
-    throw new Error('Invalid amount');
-  }
-
-  if (user.wallet.cashoutbalance < withdrawalAmount) {
-    throw new Error('Insufficient balance');
-  }
-
-  user.wallet.cashoutbalance -= withdrawalAmount;
-  await user.save();
-
-  const transaction = new DebitModel({
-    userId,
-    amount,
-    fullName,
-    WithdrawStatus: 'success',
-    date: new Date(),
-  });
-  await transaction.save();
-
-  await TransOtpVerify.deleteOne({ userId, otp });
-
-  // ✅ Send Email
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'odincirclex@gmail.com',
-      pass: 'xyqi telz pmxd evkl', // Make sure this is an app password, not your Gmail password
-    },
-  });
-
-  const emailOptions = {
-    from: 'odincirclex@gmail.com',
-    to: user.email,
-    subject: 'Withdrawal Notification',
-    html: `
-    <div style="font-family: Arial, sans-serif; color: #333; background-color: #f8f8f8; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto;">
-      <div style="text-align: center; background-color:rgb(12, 14, 16); color: white; padding: 10px 0; border-radius: 10px 10px 0 0;">
-        <h4 style="margin: 0; font-size: 14px;">Withdrawal Notification</h4>
-      </div>
-      <div style="padding: 20px; background-color: #fff; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-        <p style="font-size: 16px; margin-bottom: 10px;">Hello <strong>${user.fullName}</strong>,</p>
-        <p style="font-size: 16px; margin-bottom: 10px; text-align: center">Your withdrawal of <strong>NGN ${withdrawalAmount.toFixed(2)}</strong> has been successfully processed.</p>
-        <p style="font-size: 16px; margin-bottom: 10px; text-align: center"><strong>Transaction Details:</strong></p>
-        <p style="font-size: 14px; margin-left: 20px; text-align: center">
-          Transaction ID: <strong>${transaction._id}</strong><br>
-          Amount: <strong>NGN ${amount}</strong><br>
-          <span style="color:rgb(205, 9, 9)">Status: <strong>Success</strong></span><br>
-          Date: <strong>${new Date().toLocaleString()}</strong>
-        </p>
-        <p style="font-size: 16px; margin-top: 20px;">If you have any questions or concerns, please contact us at <a href="mailto:support@example.com" style="color: #007bff;">odincirclex@gmail.com</a>.</p>
-      </div>
-      <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #777;">
-        <p style="margin: 0;">Thank you for using our service.</p>
-      </div>
-    </div>
-    `,
-  };
-
-  await transporter.sendMail(emailOptions);
-
-  // ✅ Send Notification
-  const device = await Device.findOne({ users: { $elemMatch: { _id: userId } } });
-  if (!device) throw new Error('Device not found.');
-
-  if (!Expo.isExpoPushToken(device.expoPushToken)) {
-    throw new Error('Invalid Expo Push Token');
-  }
-
-  const notificationMessage = {
-    to: device.expoPushToken,
-    sound: 'default',
-    title: title || 'Withdrawal Notification',
-    body: message || `Your withdrawal of NGN ${withdrawalAmount.toFixed(2)} was successful`,
-  };
-
-  const chunks = expo.chunkPushNotifications([notificationMessage]);
-  const tickets = [];
-
-  for (const chunk of chunks) {
-    try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
-    } catch (err) {
-      console.error('Error sending notification chunk:', err);
-      throw new Error('Notification failed to send.');
-    }
-  }
-
-  return {
-    message: 'Withdrawal verified, email and notification sent successfully.',
-    transactionId: transaction._id,
-    tickets,
-  };
-};
 
 
 module.exports = router;
