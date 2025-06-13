@@ -1963,7 +1963,7 @@ router.post('/check-balance',verifyToken, async (req, res) => {
   }
 });
 
-router.post('/save-topup',verifyToken, async (req, res) => {
+router.post('/save-topup', async (req, res) => {
   const { userId, topUpAmount } = req.body;
 
   try {
