@@ -1144,7 +1144,7 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
 
 // Update bank details
 // Update bank details
-router.put('/updateBankDetails/:userId',verifyToken, async (req, res) => {
+router.put('/updateBankDetails/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const { bankName, accountName, accountNumber } = req.body;
