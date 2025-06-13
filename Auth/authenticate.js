@@ -1868,7 +1868,7 @@ module.exports = router;
 
 
 // Define the route
-router.post('/addOrUpdateBankDetails',verifyToken, async (req, res) => {
+router.post('/addOrUpdateBankDetails', async (req, res) => {
   const { userId, bankName, accountName, accountNumber } = req.body;
 
   try {
