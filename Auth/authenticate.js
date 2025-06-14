@@ -149,7 +149,7 @@ router.get('/api/user/:id', async (req, res) => {
   }
 });
 
-router.post('/verify-otpwithdraw',verifyToken, async (req, res) => {
+router.post('/verify-otpwithdraw', async (req, res) => {
   const { userId, otp, totalAmount } = req.body;
 
   try {
@@ -1749,19 +1749,16 @@ router.post('/add-bank-details',verifyToken, async (req, res) => {
   }
 });
 
-router.post('/verify-password',verifyToken, async (req, res) => {
-  const { password, amount } = req.body;
-  const { userId } = req.body;
+router.post('/verify-password', async (req, res) => {
+  const { userId, password, amount } = req.body;
 
   try {
     const user = await OdinCircledbModel.findById(userId);
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password); // Use await here
-
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Incorrect password' });
     }
@@ -1770,10 +1767,20 @@ router.post('/verify-password',verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Insufficient balance' });
     }
 
-    return res.status(200).json({ message: 'Withdrawal successful' });
+    // ✅ Password and balance OK — generate OTP
+    const otp = generateOTP();
+
+    // Save OTP to DB for later verification
+    await TransOtpVerify.create({ userId, otp });
+
+    // Send OTP to user's email
+    await sendOTPEmail(user.email, otp);
+
+    return res.status(200).json({ message: 'Password verified. OTP sent to email.' });
+
   } catch (error) {
-    //console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Error in /verify-password:', error.message);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -2051,7 +2058,7 @@ router.get("/user/:id",verifyToken, async (req, res) => {
   });
 
   // Endpoint to get user's wallet balance by ID
-router.get('/user/:userId/balance',verifyToken, async (req, res) => {
+router.get('/user/:userId/balance', async (req, res) => {
     const { userId } = req.params;
   
     try {
@@ -2071,7 +2078,7 @@ router.get('/user/:userId/balance',verifyToken, async (req, res) => {
   });
 
     // Endpoint to get user's wallet cashoutbalance by ID
-router.get('/user/:userId/cashoutbalance',verifyToken, async (req, res) => {
+router.get('/user/:userId/cashoutbalance', async (req, res) => {
   const { userId } = req.params;
 
   try {
