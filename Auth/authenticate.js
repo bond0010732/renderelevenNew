@@ -350,7 +350,7 @@ router.post("/paystack/withdraw", async (req, res) => {
     const otpVerificationResult = await verifyWithdrawalOtp({
       userId,
       otp,
-      totalAmount: amount,
+      totalAmount: totalAmount,
       amount,
       title,
       message,
