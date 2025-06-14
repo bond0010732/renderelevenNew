@@ -238,40 +238,29 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
     to: user.email,
     subject: 'Withdrawal Notification',
     html: `
-   <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f2f4f8; padding: 24px; max-width: 600px; margin: 0 auto; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05);">
+ <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 20px; max-width: 520px; margin: 0 auto; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.06);">
   <!-- Header -->
-  <div style="background-color: #0a0f2c; padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h2 style="margin: 0; font-size: 18px; color: #ffffff;">Withdrawal Confirmation</h2>
-    <p style="margin: 4px 0 0; color: #aab4d4; font-size: 14px;">Your transaction was successful</p>
+  <div style="background-color: #0a0f2c; padding: 16px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h3 style="margin: 0; font-size: 16px; color: #fff;">Withdrawal Successful</h3>
   </div>
 
   <!-- Body -->
-  <div style="background-color: #ffffff; padding: 24px; border-radius: 0 0 12px 12px;">
-    <p style="font-size: 16px; color: #333;">Hi <strong>${user.fullName}</strong>,</p>
+  <div style="background-color: #ffffff; padding: 20px; border-radius: 0 0 10px 10px;">
+    <p style="font-size: 15px; margin: 0 0 16px; color: #111;">Hi <strong>${user.fullName}</strong>,</p>
 
-    <p style="font-size: 16px; margin: 16px 0; text-align: center; color: #000;">
-      Your withdrawal of <strong style="color:#16a34a;">₦${withdrawalAmount.toFixed(2)}</strong> has been successfully processed.
+    <p style="font-size: 15px; text-align: center; margin-bottom: 20px;">
+      ₦<strong style="color:#16a34a;">${withdrawalAmount.toFixed(2)}</strong> has been sent to your account.
     </p>
 
-    <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 10px; text-align: left;">
-      <p style="font-size: 15px; margin: 0 0 8px;"><strong>Transaction Details</strong></p>
-      <p style="font-size: 14px; margin: 0; line-height: 1.6;">
-        Transaction ID: <strong>${transaction._id}</strong><br>
-        Amount: <strong>₦${amount}</strong><br>
-        Status: <strong style="color: #16a34a;">Success</strong><br>
-        Date: <strong>${new Date().toLocaleString()}</strong>
-      </p>
+    <div style="background-color: #f3f4f6; padding: 12px 16px; border-radius: 8px; font-size: 14px; color: #333;">
+      <div><strong>ID:</strong> ${transaction._id}</div>
+      <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
+      <div><strong>Status:</strong> <span style="color:#16a34a;">Success</span></div>
     </div>
 
-    <p style="font-size: 14px; margin-top: 20px; color: #555;">
-      If you have any questions or concerns, reach out to us at 
-      <a href="mailto:odincirclex@gmail.com" style="color: #2563eb; text-decoration: none;">odincirclex@gmail.com</a>.
+    <p style="font-size: 13px; color: #6b7280; margin-top: 20px; text-align: center;">
+      Need help? <a href="mailto:odincirclex@gmail.com" style="color: #2563eb; text-decoration: none;">Contact Support</a>
     </p>
-  </div>
-
-  <!-- Footer -->
-  <div style="text-align: center; margin-top: 16px; font-size: 13px; color: #9ca3af;">
-    <p style="margin: 0;">Thank you for choosing <strong>betxcircle</strong>.</p>
   </div>
 </div>
 
