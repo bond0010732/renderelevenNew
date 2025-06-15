@@ -2792,7 +2792,7 @@ router.get('/get-withdraw-status',verifyToken, async (req, res) => {
 
 
 // Update PlayersInRoom
-router.post('/updatePlayersInRoom',verifyToken, async (req, res) => {
+router.post('/updatePlayersInRoom', async (req, res) => {
   const { batchId, userId } = req.body;
 
   try {
