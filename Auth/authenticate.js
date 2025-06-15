@@ -2806,10 +2806,16 @@ router.post('/updatePlayersInRoom', async (req, res) => {
       return res.status(400).json({ message: 'Room is full. No more players can join.' });
     }
 
-    // Check if the user has already joined
-    if (batch.joinedUsers.includes(userId)) {
-      return res.status(200).json({ message: 'User already joined', batch });
+      // Correctly check if the user has already joined
+    const hasUserJoined = batch.joinedUsers.some(user => {
+      if (typeof user === 'string') return user === userId;
+      return user._id?.toString() === userId;
+    });
+
+    if (hasUserJoined) {
+      return res.status(400).json({ message: 'You have already joined this game.' });
     }
+
 
     if (batch.PlayersInRoom >= batch.NumberPlayers) {
     batch.roomLocked = true;
