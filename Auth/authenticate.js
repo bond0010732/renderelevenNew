@@ -2811,6 +2811,10 @@ router.post('/updatePlayersInRoom',verifyToken, async (req, res) => {
       return res.status(200).json({ message: 'User already joined', batch });
     }
 
+    if (batch.PlayersInRoom >= batch.NumberPlayers) {
+    batch.roomLocked = true;
+   }
+
     // Add userId to joinedUsers and increment PlayersInRoom
     batch.joinedUsers.push(userId);
     batch.PlayersInRoom += 1;
