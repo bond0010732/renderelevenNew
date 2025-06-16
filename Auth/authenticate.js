@@ -3230,18 +3230,17 @@ router.put('/faceoffbatches/:id', async (req, res) => {
 
 
 
-router.get('/faceoffanswer',verifyToken, async (req, res) => {
+router.get('/faceoffanswer', async (req, res) => {
   try {
-    const { batchId, page = 1, limit = 10 } = req.query;
+    const { batchId,userId, page = 1, limit = 10 } = req.query;
 
-    if (batchId) {
-      const record = await FaceOffAnswer.findOne({ batchId });
-      if (!record) {
-        return res.status(404).json({ message: 'Batch not found' });
-      }
-      return res.status(200).json({ data: [record], total: 1, currentPage: 1, totalPages: 1 });
-    }
-
+  if (batchId && userId) {
+  const record = await FaceOffAnswer.findOne({ batchId, userId });
+  if (!record) {
+    return res.status(404).json({ message: 'Record not found' });
+  }
+  return res.status(200).json({ data: [record], total: 1, currentPage: 1, totalPages: 1 });
+}
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const total = await FaceOffAnswer.countDocuments();
     const records = await FaceOffAnswer.find()
