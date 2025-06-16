@@ -3218,29 +3218,49 @@ router.get('/faceoffbatches', async (req, res) => {
   }
 });
 
+
 router.put('/faceoffbatches/:id', async (req, res) => {
   try {
-    const { joinedUsers } = req.body;
-    const { id } = req.params; // Get batch id from the URL
+    const { joinedUsers: incomingJoinedUsers } = req.body;
+    const { id } = req.params;
 
-    // Update the batch document by setting the joinedUsers array
-    const updatedBatch = await FaceOffModel.findByIdAndUpdate(
-      id, // Use the batch id (from the URL)
-      { joinedUsers }, // Update the joinedUsers array
-      { new: true } // Return the updated document
-    );
+    const userId = incomingJoinedUsers[incomingJoinedUsers.length - 1]; // current joining user
 
-    // Check if the batch was not found
-    if (!updatedBatch) {
-      return res.status(404).json({ message: 'Batch not found' });
+    const batch = await FaceOffModel.findById(id);
+    if (!batch) {
+      return res.status(404).json({ message: 'Face-Off not found' });
     }
 
-    res.status(200).json(updatedBatch); // Send the updated batch back
+    // Ensure userId is allowed to join this face-off
+    const allowedUserIds = batch.userIds.map((u) => u.toString());
+    if (!allowedUserIds.includes(userId.toString())) {
+      return res.status(403).json({ message: 'Access denied. You are not part of this face-off.' });
+    }
+
+    // Check if user already joined
+    const existingJoinedUserIds = batch.joinedUsers.map((u) => u.toString());
+    if (existingJoinedUserIds.includes(userId.toString())) {
+      return res.status(400).json({ message: 'User already joined this face-off.' });
+    }
+
+    // Check if room is full
+    if (batch.joinedUsers.length >= 2) {
+      return res.status(400).json({ message: 'Room is full.' });
+    }
+
+    // Add user to joinedUsers
+    batch.joinedUsers.push(userId);
+    await batch.save();
+
+    return res.status(200).json(batch);
   } catch (error) {
-    console.error('Error updating batch:', error);
-    res.status(500).json({ message: 'Error updating batch' });
+    console.error('Error updating face-off batch:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+
 
 router.get('/faceoffanswer',verifyToken, async (req, res) => {
   try {
