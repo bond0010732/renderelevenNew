@@ -2834,6 +2834,26 @@ router.post('/updatePlayersInRoom', async (req, res) => {
   }
 });
 
+router.get('/checkRoomStatus/:batchId', async (req, res) => {
+  try {
+    const { batchId } = req.params;
+    const batch = await BatchModel.findById(batchId);
+
+    if (!batch) {
+      return res.status(404).json({ message: 'Batch not found' });
+    }
+
+    res.json({
+      roomLocked: batch.roomLocked,
+      playersInRoom: batch.PlayersInRoom,
+      numberPlayers: batch.NumberPlayers
+    });
+  } catch (err) {
+    console.error('Error checking room status:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
 // Remove userId if validation fails
 router.post('/removeUserFromBatch', async (req, res) => {
