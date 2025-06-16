@@ -2836,7 +2836,7 @@ router.post('/updatePlayersInRoom', async (req, res) => {
 
 
 // Remove userId if validation fails
-router.post('/removeUserFromBatch',verifyToken, async (req, res) => {
+router.post('/removeUserFromBatch', async (req, res) => {
   const { batchId, userId } = req.body;
 
   try {
