@@ -3240,7 +3240,7 @@ router.put('/faceoffbatches/:id', async (req, res) => {
     // Check if user already joined
     const existingJoinedUserIds = batch.joinedUsers.map((u) => u.toString());
     if (existingJoinedUserIds.includes(userId.toString())) {
-      return res.status(400).json({ message: 'User already joined this face-off.' });
+      return res.status(400).json({ message: 'You already joined this face-off.' });
     }
 
     // Check if room is full
