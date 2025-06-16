@@ -3159,7 +3159,7 @@ router.post('/api/verify-transaction',verifyToken, async (req, res) => {
 router.get('/batches', async (req, res) => {
   console.log('Fetching all batches...');
   try {
-      const batches = await BatchModel.find();
+        const batches = await BatchModel.find({}).sort({ createdAt: -1 }); // <- ensure fresh sort
       res.json(batches);
   } catch (err) {
       console.error('Error fetching batches:', err.message);
@@ -3170,11 +3170,11 @@ router.get('/batches', async (req, res) => {
 router.get('/faceoffbatches', async (req, res) => {
   console.log('Fetching all faceoffbatches...');
   try {
-      const batches = await FaceOffModel.find();
-      res.json(batches);
+    const batches = await FaceOffModel.find({}).sort({ createdAt: -1 }); // <- ensure fresh sort
+    res.json(batches);
   } catch (err) {
-      console.error('Error fetching faceoffbatches:', err.message);
-      res.status(500).json({ error: err.message });
+          console.error('Error fetching faceoffbatches:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
