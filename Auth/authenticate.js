@@ -2984,68 +2984,6 @@ if (!/^Level(10|[1-9])$/.test(level)) {
 });
 
 
-// Save the number of correct answers for a user
-
-// router.post('/saveCorrectAnswers', async (req, res) => {
-//   const {
-//     batchId,
-//     batchName: batch,
-//     totalBetAmount,
-//     userId,              // Single user ID
-//     correctAnswers,      // Array of correct answers for each question
-//     timestamp,
-//   } = req.body;
-
-//   try {
-//     // Check if a BatchAnswer document already exists for this batchId
-//     let batchAnswer = await BatchAnswer.findOne({ batchId });
-
-//     if (batchAnswer) {
-//       // If the batch exists, check if the user already submitted answers
-//       const existingUserAnswer = batchAnswer.userAnswers.find(
-//         (user) => user.userId === userId
-//       );
-
-//       if (existingUserAnswer) {
-//         return res
-//           .status(400)
-//           .json({ message: 'Answers for this user and batch already exist.' });
-//       }
-
-  
-//       batchAnswer.userAnswers.push({
-//         userId,
-//         correctAnswers, 
-//       });
-
-//       // Save the updated document
-//       await batchAnswer.save();
-//     } else {
-//       batchAnswer = new BatchAnswer({
-//         batchId,
-//         batchName: batch,
-//         totalBetAmount,
-//         userAnswers: [
-//           {
-//             userId,
-//             correctAnswers, 
-//           },
-//         ],
-//         timestamp: timestamp || new Date(), 
-//       });
-
-//       await batchAnswer.save();
-//     }
-
-//     return res
-//       .status(200)
-//       .json({ message: 'Correct answers saved successfully', batch: batchAnswer });
-//   } catch (error) {
-//     console.error('Error saving correct answers:', error);
-//     return res.status(500).json({ message: 'Server error' });
-//   }
-// });
-
 router.post('/saveCorrectAnswers', async (req, res) => {
   const {
     batchId,
@@ -3061,7 +2999,6 @@ router.post('/saveCorrectAnswers', async (req, res) => {
     return res.status(400).json({ message: 'Answers must be an array.' });
   }
 
-
   try {
     let batchAnswer = await BatchAnswer.findOne({ batchId });
 
@@ -3076,6 +3013,7 @@ router.post('/saveCorrectAnswers', async (req, res) => {
           .json({ message: 'Answers for this user and batch already exist.' });
       }
 
+      // ✅ Push new user's answer into userAnswers array
       batchAnswer.userAnswers.push({
         userId,
         correctAnswers,
@@ -3085,11 +3023,11 @@ router.post('/saveCorrectAnswers', async (req, res) => {
 
       await batchAnswer.save();
     } else {
+      // ✅ Create a new batch entry (notice userId is not at root)
       batchAnswer = new BatchAnswer({
         batchId,
         batchName,
         totalBetAmount,
-        userId: [userId], // Make sure to wrap in array since your schema uses an array
         userAnswers: [
           {
             userId,
@@ -3108,10 +3046,78 @@ router.post('/saveCorrectAnswers', async (req, res) => {
       .status(200)
       .json({ message: 'Correct answers saved successfully', batch: batchAnswer });
   } catch (error) {
-    console.error('Error saving correct answers:', error);
+    console.error('❌ Error saving correct answers:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+// router.post('/saveCorrectAnswers', async (req, res) => {
+//   const {
+//     batchId,
+//     batchName,
+//     totalBetAmount,
+//     userId,
+//     correctAnswers,
+//     answers,
+//     timestamp,
+//   } = req.body;
+
+//   if (!Array.isArray(answers)) {
+//     return res.status(400).json({ message: 'Answers must be an array.' });
+//   }
+
+
+//   try {
+//     let batchAnswer = await BatchAnswer.findOne({ batchId });
+
+//     if (batchAnswer) {
+//       const existingUserAnswer = batchAnswer.userAnswers.find(
+//         (user) => user.userId === userId
+//       );
+
+//       if (existingUserAnswer) {
+//         return res
+//           .status(400)
+//           .json({ message: 'Answers for this user and batch already exist.' });
+//       }
+
+//       batchAnswer.userAnswers.push({
+//         userId,
+//         correctAnswers,
+//         answers,
+//         timestamp: timestamp || new Date(),
+//       });
+
+//       await batchAnswer.save();
+//     } else {
+//       batchAnswer = new BatchAnswer({
+//         batchId,
+//         batchName,
+//         totalBetAmount,
+//         userId: [userId], // Make sure to wrap in array since your schema uses an array
+//         userAnswers: [
+//           {
+//             userId,
+//             correctAnswers,
+//             answers,
+//             timestamp: timestamp || new Date(),
+//           },
+//         ],
+//         timestamp: timestamp || new Date(),
+//       });
+
+//       await batchAnswer.save();
+//     }
+
+//     return res
+//       .status(200)
+//       .json({ message: 'Correct answers saved successfully', batch: batchAnswer });
+//   } catch (error) {
+//     console.error('Error saving correct answers:', error);
+//     return res.status(500).json({ message: 'Server error' });
+//   }
+// });
 
 
 router.post('/api/verify-transaction',verifyToken, async (req, res) => {
