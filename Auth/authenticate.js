@@ -3207,7 +3207,7 @@ router.get('/batches', async (req, res) => {
   }
 });
 
-router.get('/faceoffbatches',verifyToken, async (req, res) => {
+router.get('/faceoffbatches', async (req, res) => {
   console.log('Fetching all faceoffbatches...');
   try {
       const batches = await FaceOffModel.find();
@@ -3218,7 +3218,7 @@ router.get('/faceoffbatches',verifyToken, async (req, res) => {
   }
 });
 
-router.put('/faceoffbatches/:id',verifyToken, async (req, res) => {
+router.put('/faceoffbatches/:id', async (req, res) => {
   try {
     const { joinedUsers } = req.body;
     const { id } = req.params; // Get batch id from the URL
