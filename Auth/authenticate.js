@@ -3167,16 +3167,49 @@ router.get('/batches', async (req, res) => {
   }
 });
 
-router.get('/faceoffbatches', async (req, res) => {
-  console.log('Fetching all faceoffbatches...');
+// router.get('/faceoffbatches', async (req, res) => {
+//   console.log('Fetching all faceoffbatches...');
+//   try {
+//     const batches = await FaceOffModel.find({}).sort({ createdAt: -1 }); // <- ensure fresh sort
+//     res.json(batches);
+//   } catch (err) {
+//           console.error('Error fetching faceoffbatches:', err.message);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// Corrected backend route
+router.get('/faceoffanswer', async (req, res) => {
   try {
-    const batches = await FaceOffModel.find({}).sort({ createdAt: -1 }); // <- ensure fresh sort
-    res.json(batches);
-  } catch (err) {
-          console.error('Error fetching faceoffbatches:', err.message);
-    res.status(500).json({ message: 'Server error' });
+    const { batchId, userId } = req.query;
+
+    if (batchId && userId) {
+      // Find the record where batchId matches AND userId is inside userAnswers array
+      const record = await FaceOffAnswer.findOne({
+        batchId,
+        'userAnswers.userId': userId,
+      });
+
+      if (!record) {
+        return res.status(404).json({ message: 'Record not found' });
+      }
+
+      // Extract just the user's answers from userAnswers array
+      const userEntry = record.userAnswers.find(entry => entry.userId === userId);
+      return res.status(200).json({
+        data: userEntry?.answers || [],
+        correctAnswers: userEntry?.correctAnswers || 0,
+        batchName: record.batchName,
+      });
+    }
+
+    res.status(400).json({ message: 'Missing batchId or userId' });
+  } catch (error) {
+    console.error('Error fetching faceoff answer:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 router.put('/faceoffbatches/:id', async (req, res) => {
