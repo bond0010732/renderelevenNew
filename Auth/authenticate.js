@@ -3221,43 +3221,44 @@ router.get('/faceoffbatches', async (req, res) => {
 
 router.put('/faceoffbatches/:id', async (req, res) => {
   try {
-    const { joinedUsers: incomingJoinedUsers } = req.body;
+    const { userId } = req.body;
     const { id } = req.params;
 
-    const userId = incomingJoinedUsers[incomingJoinedUsers.length - 1]; // current joining user
+    if (!userId) {
+      return res.status(400).json({ message: 'Missing userId in request body.' });
+    }
 
     const batch = await FaceOffModel.findById(id);
     if (!batch) {
       return res.status(404).json({ message: 'Face-Off not found' });
     }
 
-    // Ensure userId is allowed to join this face-off
     const allowedUserIds = batch.userIds.map((u) => u.toString());
     if (!allowedUserIds.includes(userId.toString())) {
       return res.status(403).json({ message: 'Access denied. You are not part of this face-off.' });
     }
 
-    // Check if user already joined
     const existingJoinedUserIds = batch.joinedUsers.map((u) => u.toString());
     if (existingJoinedUserIds.includes(userId.toString())) {
       return res.status(400).json({ message: 'You already joined this face-off.' });
     }
 
-    // Check if room is full
     if (batch.joinedUsers.length >= 2) {
       return res.status(400).json({ message: 'Room is full.' });
     }
 
-    // Add user to joinedUsers
     batch.joinedUsers.push(userId);
     await batch.save();
 
-    return res.status(200).json(batch);
+    res.status(200).json(batch);
   } catch (error) {
     console.error('Error updating face-off batch:', error);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
+
+  
+  
 
 
 
