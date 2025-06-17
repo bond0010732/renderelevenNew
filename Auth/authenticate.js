@@ -3341,6 +3341,7 @@ router.get('/api/trivia/scoreboard', async (req, res) => {
         usersWithScores.push({
           userId: entry.userId,
           username: user?.username || 'Unknown',
+          fullName: user?.fullName || 'Unknown',
           correctAnswers: entry.correctAnswers,
         });
       }
