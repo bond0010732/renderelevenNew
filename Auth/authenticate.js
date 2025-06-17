@@ -3336,7 +3336,7 @@ router.get('/api/trivia/scoreboard', async (req, res) => {
       const usersWithScores = [];
 
       for (const entry of batch.userAnswers) {
-        const user = await OdinCircledbModel.findById(entry.userId).select('username');
+        const user = await OdinCircledbModel.findById(entry.userId).select('username', 'fullName');
 
         usersWithScores.push({
           userId: entry.userId,
