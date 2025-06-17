@@ -3263,35 +3263,35 @@ router.put('/faceoffbatches/:id', async (req, res) => {
 
 
 
-router.get('/faceoffanswer', async (req, res) => {
-  try {
-    const { batchId,userId, page = 1, limit = 10 } = req.query;
+// router.get('/faceoffanswer', async (req, res) => {
+//   try {
+//     const { batchId,userId, page = 1, limit = 10 } = req.query;
 
-  if (batchId && userId) {
-  const record = await FaceOffAnswer.findOne({ batchId, userId });
-  if (!record) {
-    return res.status(404).json({ message: 'Record not found' });
-  }
-  return res.status(200).json({ data: [record], total: 1, currentPage: 1, totalPages: 1 });
-}
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const total = await FaceOffAnswer.countDocuments();
-    const records = await FaceOffAnswer.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+//   if (batchId && userId) {
+//   const record = await FaceOffAnswer.findOne({ batchId, userId });
+//   if (!record) {
+//     return res.status(404).json({ message: 'Record not found' });
+//   }
+//   return res.status(200).json({ data: [record], total: 1, currentPage: 1, totalPages: 1 });
+// }
+//     const skip = (parseInt(page) - 1) * parseInt(limit);
+//     const total = await FaceOffAnswer.countDocuments();
+//     const records = await FaceOffAnswer.find()
+//       .sort({ createdAt: -1 })
+//       .skip(skip)
+//       .limit(parseInt(limit));
 
-    res.status(200).json({
-      data: records,
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(total / limit),
-      totalItems: total,
-    });
-  } catch (error) {
-    console.error('Error fetching faceoff answers:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+//     res.status(200).json({
+//       data: records,
+//       currentPage: parseInt(page),
+//       totalPages: Math.ceil(total / limit),
+//       totalItems: total,
+//     });
+//   } catch (error) {
+//     console.error('Error fetching faceoff answers:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 
 
@@ -3394,7 +3394,38 @@ router.get('/api/user-batch-answers', async (req, res) => {
   }
 });
 
+// GET /api/user-batch-answers?userId=...
+router.get('/api/user-batch-faceoffanswers', async (req, res) => {
+  const { userId } = req.query;
 
+  if (!userId) {
+    return res.status(400).json({ message: 'Missing userId' });
+  }
+
+  try {
+    const allBatches = await FaceOffAnswer.find({
+      'userAnswers.userId': userId,
+    }).sort({ createdAt: -1 });
+
+    // Extract only the answers for this user in each batch
+    const userBatches = allBatches.map(batch => {
+      const userEntry = batch.userAnswers.find(u => u.userId === userId);
+
+      return {
+        batchName: batch.batchName,
+        batchId: batch.batchId,
+        answers: userEntry?.answers || [],
+        correctAnswers: userEntry?.correctAnswers || 0,
+        timestamp: userEntry?.timestamp,
+      };
+    });
+
+    res.status(200).json({ data: userBatches });
+  } catch (err) {
+    console.error('Error fetching user batch answers:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 router.post('/faceoffanswers', async (req, res) => {
   const {
