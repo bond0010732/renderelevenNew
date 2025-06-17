@@ -3302,27 +3302,60 @@ router.get('/faceoffanswer', async (req, res) => {
 
 // Sample route to fetch batch answers
 // GET /api/batch-answers?page=1&limit=10
-router.get('/api/batch-answers',verifyToken, async (req, res) => {
+// router.get('/api/batch-answers',verifyToken, async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+//     const skip = (page - 1) * limit;
+
+//     const total = await BatchAnswer.countDocuments();
+//     const batchAnswers = await BatchAnswer.find()
+//       .sort({ createdAt: -1 })
+//       .skip(skip)
+//       .limit(limit);
+
+//     return res.status(200).json({
+//       data: batchAnswers,
+//       currentPage: page,
+//       totalPages: Math.ceil(total / limit),
+//       totalItems: total,
+//     });
+//   } catch (error) {
+//     console.error('Error fetching batch answers:', error);
+//     return res.status(500).json({ message: 'Server error' });
+//   }
+// });
+// GET /api/user-batch-answers?userId=...
+router.get('/api/user-batch-answers', async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Missing userId' });
+  }
+
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const allBatches = await BatchAnswer.find({
+      'userAnswers.userId': userId,
+    }).sort({ createdAt: -1 });
 
-    const total = await BatchAnswer.countDocuments();
-    const batchAnswers = await BatchAnswer.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // Extract only the answers for this user in each batch
+    const userBatches = allBatches.map(batch => {
+      const userEntry = batch.userAnswers.find(u => u.userId === userId);
 
-    return res.status(200).json({
-      data: batchAnswers,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      totalItems: total,
+      return {
+        batchName: batch.batchName,
+        batchId: batch.batchId,
+        totalBetAmount: batch.totalBetAmount,
+        answers: userEntry?.answers || [],
+        correctAnswers: userEntry?.correctAnswers || 0,
+        timestamp: userEntry?.timestamp,
+      };
     });
-  } catch (error) {
-    console.error('Error fetching batch answers:', error);
-    return res.status(500).json({ message: 'Server error' });
+
+    res.status(200).json({ data: userBatches });
+  } catch (err) {
+    console.error('Error fetching user batch answers:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
