@@ -3360,6 +3360,41 @@ router.get('/api/trivia/scoreboard', async (req, res) => {
   }
 });
 
+
+router.get('/api/faceoff/scoreboard', async (req, res) => {
+  try {
+    const batchAnswers = await FaceOffAnswer.find();
+
+    const scoreboard = [];
+
+    for (const batch of batchAnswers) {
+      const usersWithScores = [];
+
+      for (const entry of batch.userAnswers) {
+        const user = await OdinCircledbModel.findById(entry.userId).select('username' 'fullName');
+
+        usersWithScores.push({
+          userId: entry.userId,
+          username: user?.username || 'Unknown',
+          fullName: user?.fullName || 'Unknown',
+          correctAnswers: entry.correctAnswers,
+        });
+      }
+
+      scoreboard.push({
+        batchId: batch._id,
+        batchName: batch.batchName,
+        users: usersWithScores.sort((a, b) => b.correctAnswers - a.correctAnswers), // optional sort
+      });
+    }
+
+    return res.status(200).json(scoreboard);
+  } catch (error) {
+    console.error('Error generating scoreboard:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /api/user-batch-answers?userId=...
 router.get('/api/user-batch-answers', async (req, res) => {
   const { userId } = req.query;
