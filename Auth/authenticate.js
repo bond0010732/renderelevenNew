@@ -789,6 +789,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
+    console.log(otp,'jdjd')
     // Save temporary user (Unverified)
     const unverifiedUser = await UnverifiedUser.create({
       fullName,
