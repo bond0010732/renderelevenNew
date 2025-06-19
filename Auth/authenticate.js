@@ -1173,6 +1173,34 @@ router.get('/api/usersVisibleTo/:userId', async (req, res) => {
   }
 });
 
+// POST /api/unlockMore
+router.post('/api/unlockMore', async (req, res) => {
+  const { userId, amount, costPerUnlock } = req.body; // e.g., amount = 10, costPerUnlock = 100
+  try {
+    const user = await OdinCircledbModel.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const totalCost = costPerUnlock; // flat rate ₦100
+
+    if (user.wallet.balance < totalCost) {
+      return res.status(400).json({ error: 'Insufficient funds' });
+    }
+
+    // Deduct wallet balance and increase unlockedCount
+    user.wallet.balance -= totalCost;
+    user.unlockedCount += amount;
+
+    await user.save();
+
+    res.json({
+      message: 'Unlock successful',
+      unlockedCount: user.unlockedCount,
+      wallet: user.wallet.balance,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
 
 // Update bank details
 // Update bank details
