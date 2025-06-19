@@ -1153,7 +1153,7 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
 // Fetch limited users based on requesting user's unlockedCount
 router.get('/api/usersVisibleTo/:userId', async (req, res) => {
   try {
-    const requestingUser = await OdinCircledbModel.findById(req.params.userId).select('unlockedCount');
+    const requestingUser = await OdinCircledbModel.findById(req.params.userId).select('unlockedCount'); 
     if (!requestingUser) {
       return res.status(404).json({ message: 'Requesting user not found' });
     }
@@ -1161,7 +1161,7 @@ router.get('/api/usersVisibleTo/:userId', async (req, res) => {
     const limit = requestingUser.unlockedCount ?? 10;
 
     // Fetch other users (excluding self), limited by unlockedCount
-    const users = await OdinCircledModel.find({ _id: { $ne: req.params.userId } })
+    const users = await  OdinCircledbModel.find({ _id: { $ne: req.params.userId } })
       .select('fullName email') // select what you need
       .limit(limit);
 
