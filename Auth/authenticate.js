@@ -639,6 +639,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       fullName: unverifiedUser.fullName,
       email: unverifiedUser.email,
       password: unverifiedUser.password,
+      unlockedCount: unverifiedUser.unlockedCount
       image: unverifiedUser.image,
       expoPushToken: unverifiedUser.expoPushToken,
       verified: true,
@@ -795,6 +796,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       password: hashedPassword,
       image: result.secure_url,
       expoPushToken,
+      unlockedCount,
       otp,
       referralCode: generateReferralCode(),
       createdAt: new Date(),
