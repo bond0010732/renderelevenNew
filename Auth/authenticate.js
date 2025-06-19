@@ -1159,7 +1159,7 @@ router.get('/api/usersVisibleTo/:userId', async (req, res) => {
     const limit = requestingUser.unlockedCount ?? 10;
 
     // Fetch other users (excluding self), limited by unlockedCount
-    const users = await User.find({ _id: { $ne: req.params.userId } })
+    const users = await OdinCircledModel.find({ _id: { $ne: req.params.userId } })
       .select('fullName email') // select what you need
       .limit(limit);
 
