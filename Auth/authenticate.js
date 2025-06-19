@@ -1202,6 +1202,17 @@ router.post('/api/unlockMore', async (req, res) => {
   }
 });
 
+// routes/userRoutes.js or wherever your routes are
+router.get('/api/users/count', async (req, res) => {
+  try {
+    const total = await OdinCircledbModel.countDocuments();
+    res.json({ total }); // return { total: number }
+  } catch (error) {
+    console.error('Error counting users:', error);
+    res.status(500).json({ error: 'Failed to count users' });
+  }
+});
+
 // Update bank details
 // Update bank details
 router.put('/updateBankDetails/:userId', async (req, res) => {
