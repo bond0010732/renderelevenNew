@@ -29,7 +29,12 @@ const UnverifiedUserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  unlockedCount: Number, // default 10
+  
+unlockedCount: {
+  type: Number,
+  default: 10,
+},
+
   referralCode: {
     type: String,
     default: null,
