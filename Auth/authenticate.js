@@ -1147,6 +1147,29 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
   }
 });
 
+// Get how many items a user has unlocked
+// Fetch limited users based on requesting user's unlockedCount
+router.get('/api/usersVisibleTo/:userId', async (req, res) => {
+  try {
+    const requestingUser = await OdinCircledbModel.findById(req.params.userId).select('unlockedCount');
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found' });
+    }
+
+    const limit = requestingUser.unlockedCount ?? 10;
+
+    // Fetch other users (excluding self), limited by unlockedCount
+    const users = await User.find({ _id: { $ne: req.params.userId } })
+      .select('fullName email') // select what you need
+      .limit(limit);
+
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching visible users:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
 // Update bank details
 // Update bank details
