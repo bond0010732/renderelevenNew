@@ -639,7 +639,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       fullName: unverifiedUser.fullName,
       email: unverifiedUser.email,
       password: unverifiedUser.password,
-      unlockedCount: unverifiedUser.unlockedCount
+      unlockedCount: unverifiedUser.unlockedCount,
       image: unverifiedUser.image,
       expoPushToken: unverifiedUser.expoPushToken,
       verified: true,
