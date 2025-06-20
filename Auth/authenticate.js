@@ -1154,7 +1154,6 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
 // Fetch limited users based on requesting user's unlockedCount
 router.get('/api/usersVisibleTo/:userId', async (req, res) => {
    const { page = 1, limit = 10 } = req.query;
-   const { page = 1, limit = 10 } = req.query;
   
   try {
     const requestingUser = await OdinCircledbModel.findById(req.params.userId).select('unlockedCount'); 
