@@ -1155,7 +1155,7 @@ router.get('/api/unreadCount/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const unreadMessages = await Message.find({
+    const unreadMessages = await ChatMessage.find({
       receiverId: userId,
       status: 'sent'  // Not 'delivered' or 'read'
     });
