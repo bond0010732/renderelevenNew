@@ -11,6 +11,7 @@ const AddTimeLog = require('../models/AddTimeLog');
 const TopUpModel = require('../models/TopUpModel');
 const DebitModel = require('../models/DebitModel');
 const ChatModel = require('../models/ChatModel');
+const ChatMessage = require('../models/ChatMessage');
 const BetIntent = require('../models/BetIntent');
 const UserOtpVerification = require('../models/UserOtpVerify');
 const  UnverifiedUser = require('../models/UnverifiedUser');
@@ -1147,6 +1148,39 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
   } catch (error) {
       console.error('Error fetching bank details:', error);
       res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.get('/api/unreadCount/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Group messages sent BY this user, delivered but not read
+    const counts = await ChatMessage.aggregate([
+      {
+        $match: {
+          senderId: userId,
+          status: 'delivered'
+        }
+      },
+      {
+        $group: {
+          _id: '$receiverId',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Convert to object: { receiverId1: count, receiverId2: count }
+    const unreadMap = {};
+    counts.forEach(({ _id, count }) => {
+      unreadMap[_id] = count;
+    });
+
+    res.json(unreadMap);
+  } catch (err) {
+    console.error('Unread badge error:', err);
+    res.status(500).json({ error: 'Failed to get unread counts' });
   }
 });
 
