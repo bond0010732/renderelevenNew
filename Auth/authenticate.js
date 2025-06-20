@@ -1160,7 +1160,7 @@ router.get('/api/unreadCount/:userId', async (req, res) => {
       {
         $match: {
           senderId: userId,
-          status: 'delivered'
+          status: 'sent'
         }
       },
       {
