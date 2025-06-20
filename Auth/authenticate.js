@@ -1153,31 +1153,37 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
 // Get how many items a user has unlocked
 // Fetch limited users based on requesting user's unlockedCount
 router.get('/api/usersVisibleTo/:userId', async (req, res) => {
-   const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10 } = req.query;
   
   try {
-    const requestingUser = await OdinCircledbModel.findById(req.params.userId).select('unlockedCount'); 
+    const requestingUser = await OdinCircledbModel.findById(req.params.userId).select('unlockedCount');
+    
     if (!requestingUser) {
       return res.status(404).json({ message: 'Requesting user not found' });
     }
 
-    const limit = requestingUser.unlockedCount ?? 10;
-    const totalUnlocked = requestingUser.unlockedCount;
+    const unlockedCount = requestingUser.unlockedCount ?? 10;
 
-    // Fetch other users (excluding self), limited by unlockedCount
-    const users = await  OdinCircledbModel.find({
-      _id: { $ne: req.params.userId }
-    })
-      .select('fullName email') // select what you need
-      .limit(limit);
-      .skip((page - 1) * limit);
+    const pageInt = parseInt(page);
+    const limitInt = parseInt(limit);
 
-    res.json({ users, hasMore: totalUnlocked > page * limit });
+    // Ensure you don't fetch beyond unlockedCount
+    const effectiveLimit = Math.min(limitInt, unlockedCount - (pageInt - 1) * limitInt);
+
+    const users = await OdinCircledbModel.find({ _id: { $ne: req.params.userId } })
+      .select('fullName email')
+      .skip((pageInt - 1) * limitInt)
+      .limit(effectiveLimit);
+
+    const hasMore = pageInt * limitInt < unlockedCount;
+
+    res.json({ items: users, hasMore });
   } catch (err) {
     console.error('Error fetching visible users:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // POST /api/unlockMore
 router.post('/api/unlockMore', async (req, res) => {
