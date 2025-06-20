@@ -1152,37 +1152,30 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
 });
 
 router.get('/api/unreadCount/:userId', async (req, res) => {
+  const { userId } = req.params;
+
   try {
-    const userId = req.params.userId;
-
-    // Group messages sent BY this user, delivered but not read
-    const counts = await ChatMessage.aggregate([
-      {
-        $match: {
-          senderId: userId,
-          status: 'sent'
-        }
-      },
-      {
-        $group: {
-          _id: '$receiverId',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Convert to object: { receiverId1: count, receiverId2: count }
-    const unreadMap = {};
-    counts.forEach(({ _id, count }) => {
-      unreadMap[_id] = count;
+    const unreadMessages = await Message.find({
+      receiverId: userId,
+      status: 'sent'  // Not 'delivered' or 'read'
     });
 
+    // Group and count by senderId
+    const unreadMap = {};
+
+    unreadMessages.forEach(msg => {
+      const senderId = msg.senderId.toString();
+      unreadMap[senderId] = (unreadMap[senderId] || 0) + 1;
+    });
+
+    console.log('📬 UnreadMap for', userId, unreadMap);
     res.json(unreadMap);
   } catch (err) {
-    console.error('Unread badge error:', err);
-    res.status(500).json({ error: 'Failed to get unread counts' });
+    console.error('❌ Error fetching unread messages:', err);
+    res.status(500).json({ error: 'Server error fetching unread count' });
   }
 });
+
 
 // Get how many items a user has unlocked
 // Fetch limited users based on requesting user's unlockedCount
