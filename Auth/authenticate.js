@@ -1221,20 +1221,31 @@ router.get('/api/usersVisibleTo/:userId', async (req, res) => {
 
 // POST /api/unlockMore
 router.post('/api/unlockMore', async (req, res) => {
-  const { userId, amount, costPerUnlock } = req.body; // e.g., amount = 10, costPerUnlock = 100
+  const { userId, amount, costPerUnlock } = req.body;
+
   try {
     const user = await OdinCircledbModel.findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const totalCost = costPerUnlock; // flat rate ₦100
+    // Count all users (including self)
+    const totalUsers = await OdinCircledbModel.countDocuments();
+    const maxUnlockable = totalUsers - 1; // exclude self
+
+    if (user.unlockedCount >= maxUnlockable) {
+      return res.status(400).json({ error: 'All users already unlocked' });
+    }
+
+    const totalCost = costPerUnlock;
 
     if (user.wallet.balance < totalCost) {
       return res.status(400).json({ error: 'Insufficient funds' });
     }
 
-    // Deduct wallet balance and increase unlockedCount
+    // Only increase unlockedCount up to the max
+    const newUnlockedCount = Math.min(user.unlockedCount + amount, maxUnlockable);
+
     user.wallet.balance -= totalCost;
-    user.unlockedCount += amount;
+    user.unlockedCount = newUnlockedCount;
 
     await user.save();
 
@@ -1244,9 +1255,11 @@ router.post('/api/unlockMore', async (req, res) => {
       wallet: user.wallet.balance,
     });
   } catch (err) {
+    console.error('UnlockMore error:', err);
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
+
 
 // routes/userRoutes.js or wherever your routes are
 router.get('/api/users/count', async (req, res) => {
