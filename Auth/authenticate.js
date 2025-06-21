@@ -1151,14 +1151,15 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
   }
 });
 
+// GET /api/message-status/:roomId/:userId
 router.get('/api/message-status/:roomId/:userId', async (req, res) => {
   const { roomId, userId } = req.params;
 
   try {
     const messages = await ChatMessage.find({
       roomId,
-      senderId: userId,
-      status: { $in: ['sent', 'delivered'] } // still trackable
+      senderId: userId, // messages sent by ME
+      status: { $in: ['sent', 'delivered'] },
     }).select('_id status');
 
     const statusMap = {};
@@ -1166,7 +1167,7 @@ router.get('/api/message-status/:roomId/:userId', async (req, res) => {
       statusMap[msg._id] = msg.status;
     });
 
-    res.json(statusMap); // e.g., { "msg123": "read", "msg456": "delivered" }
+    res.json(statusMap); // e.g., { "msg1": "read", "msg2": "delivered" }
   } catch (err) {
     console.error('❌ Error checking message statuses:', err);
     res.status(500).json({ error: 'Server error checking statuses' });
