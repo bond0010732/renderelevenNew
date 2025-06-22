@@ -1174,31 +1174,62 @@ router.get('/api/message-status/:roomId/:userId', async (req, res) => {
   }
 });
 
-
 router.get('/api/unreadCount/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
     const unreadMessages = await ChatMessage.find({
       receiverId: userId,
-      status: 'sent'  // Not 'delivered' or 'read'
-    });
+      status: 'sent'
+    }).sort({ timestamp: -1 }); // latest unread first
 
-    // Group and count by senderId
     const unreadMap = {};
 
     unreadMessages.forEach(msg => {
       const senderId = msg.senderId.toString();
-      unreadMap[senderId] = (unreadMap[senderId] || 0) + 1;
+
+      if (!unreadMap[senderId]) {
+        unreadMap[senderId] = {
+          count: 1,
+          timestamp: msg.timestamp // take latest timestamp
+        };
+      } else {
+        unreadMap[senderId].count += 1;
+      }
     });
 
-    console.log('📬 UnreadMap for', userId, unreadMap);
     res.json(unreadMap);
   } catch (err) {
     console.error('❌ Error fetching unread messages:', err);
     res.status(500).json({ error: 'Server error fetching unread count' });
   }
 });
+
+
+// router.get('/api/unreadCount/:userId', async (req, res) => {
+//   const { userId } = req.params;
+
+//   try {
+//     const unreadMessages = await ChatMessage.find({
+//       receiverId: userId,
+//       status: 'sent'  // Not 'delivered' or 'read'
+//     });
+
+//     // Group and count by senderId
+//     const unreadMap = {};
+
+//     unreadMessages.forEach(msg => {
+//       const senderId = msg.senderId.toString();
+//       unreadMap[senderId] = (unreadMap[senderId] || 0) + 1;
+//     });
+
+//     console.log('📬 UnreadMap for', userId, unreadMap);
+//     res.json(unreadMap);
+//   } catch (err) {
+//     console.error('❌ Error fetching unread messages:', err);
+//     res.status(500).json({ error: 'Server error fetching unread count' });
+//   }
+// });
 
 
 // Get how many items a user has unlocked
