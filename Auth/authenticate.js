@@ -1222,7 +1222,7 @@ router.get('/api/usersVisibleTo/:userId', async (req, res) => {
     const effectiveLimit = Math.min(limitInt, unlockedCount - (pageInt - 1) * limitInt);
 
     const users = await OdinCircledbModel.find({ _id: { $ne: req.params.userId } })
-      .select('fullName email')
+      .select('fullName email image')
       .skip((pageInt - 1) * limitInt)
       .limit(effectiveLimit);
 
