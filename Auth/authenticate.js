@@ -1151,6 +1151,25 @@ router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
   }
 });
 
+// POST /api/usersByIds
+router.post('/api/usersByIds', async (req, res) => {
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
+
+  try {
+    const users = await OdinCircledbModel.find({ _id: { $in: ids } })
+      .select('_id fullName image');
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching users by IDs:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 // GET /api/message-status/:roomId/:userId
 router.get('/api/message-status/:roomId/:userId', async (req, res) => {
   const { roomId, userId } = req.params;
