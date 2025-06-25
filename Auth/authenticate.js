@@ -790,6 +790,9 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
+      // Create JWT
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+
     console.log(otp,'jdjd')
     // Save temporary user (Unverified)
     const unverifiedUser = await UnverifiedUser.create({
