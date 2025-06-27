@@ -3060,7 +3060,8 @@ router.post('/removeUserFromBatch', async (req, res) => {
     }
 
     // Remove the user from joinedUsers
-    batch.joinedUsers = batch.joinedUsers.filter((id) => id !== userId);
+   batch.joinedUsers = batch.joinedUsers.filter((id) => id.toString() !== userId.toString());
+
     batch.PlayersInRoom = Math.max(0, batch.PlayersInRoom - 1);
 
     await batch.save();
