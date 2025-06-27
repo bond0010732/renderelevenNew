@@ -3073,7 +3073,7 @@ router.post('/removeUserFromBatch', async (req, res) => {
   }
 });
 
-router.post('/addTime',verifyToken, async (req, res) => {
+router.post('/addTime', async (req, res) => {
   const { userId, cost } = req.body;
 
   try {
