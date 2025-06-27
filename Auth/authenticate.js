@@ -3361,16 +3361,16 @@ router.get('/batches', async (req, res) => {
   }
 });
 
-// router.get('/faceoffbatches', async (req, res) => {
-//   console.log('Fetching all faceoffbatches...');
-//   try {
-//     const batches = await FaceOffModel.find({}).sort({ createdAt: -1 }); // <- ensure fresh sort
-//     res.json(batches);
-//   } catch (err) {
-//           console.error('Error fetching faceoffbatches:', err.message);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
+router.get('/faceoffbatches', async (req, res) => {
+  console.log('Fetching all faceoffbatches...');
+  try {
+    const batches = await FaceOffModel.find({}).sort({ createdAt: -1 }); // <- ensure fresh sort
+    res.json(batches);
+  } catch (err) {
+          console.error('Error fetching faceoffbatches:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // Corrected backend route
 router.get('/faceoffanswer', async (req, res) => {
