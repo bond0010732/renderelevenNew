@@ -111,7 +111,7 @@ router.get('/userwinner/:userId', async (req, res) => {
 });
 
 // GET /userloser/:userId?page=1&limit=10
-router.get('/userloser/:userId',verifyToken, async (req, res) => {
+router.get('/userloser/:userId', async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
 
   try {
@@ -2900,7 +2900,7 @@ router.get('/getBetsQuiz',verifyToken, async (req, res) => {
 });
 
 // Route to get the referral list for a specific user by userId
-router.get('/referrals/:userId',verifyToken, async (req, res) => {
+router.get('/referrals/:userId', async (req, res) => {
   try {
     const { userId } = req.params; // Extract the userId from the URL parameters
 
