@@ -1873,7 +1873,7 @@ router.put('/updateUserProfileImage/:userId', upload.single('image'),verifyToken
 });
 
 // Get user profile by userId
-router.get('/getUserProfile/:userId',verifyToken, async (req, res) => {
+router.get('/getUserProfile/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
     const user = await OdinCircledbModel.findById(userId);
@@ -1895,27 +1895,29 @@ router.get('/getUserProfile/:userId',verifyToken, async (req, res) => {
   }
 });
 
-// Update user's fullName
-router.put('/updateUserProfile/:userId',verifyToken, async (req, res) => {
+// PUT /updateUserProfile/:userId
+router.put('/updateUserProfile/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-    const { fullName } = req.body;
+    const { fullName, image } = req.body;
 
     const user = await OdinCircledbModel.findById(userId);
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Normalize fullName before saving
-    user.fullName = fullName?.trim().toLowerCase();
+    // Update fields if provided
+    if (fullName) user.fullName = fullName.trim().toLowerCase();
+    if (image) user.image = image; // should be a URL or Base64 depending on your client logic
+
     await user.save();
 
-    res.status(200).json({ message: 'Profile updated successfully' });
+    res.status(200).json({ message: 'Profile updated successfully', user });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
 
 
 router.post('/add-bank-details',verifyToken, async (req, res) => {
