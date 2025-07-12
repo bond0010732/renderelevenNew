@@ -1497,7 +1497,7 @@ router.post('/update-device',verifyToken, async (req, res) => {
 });
 
 
-router.post('/send-code',verifyToken, async (req, res) => {
+router.post('/send-code', async (req, res) => {
   const { email } = req.body;
 
   try {
@@ -1561,7 +1561,7 @@ router.post('/send-code',verifyToken, async (req, res) => {
 
 
 
-router.post('/verify-code',verifyToken, async (req, res) => {
+router.post('/verify-code', async (req, res) => {
   const { email, code } = req.body;
 
   try {
@@ -1589,7 +1589,7 @@ router.post('/verify-code',verifyToken, async (req, res) => {
 });
 
 
-router.post('/reset-password',verifyToken, async (req, res) => {
+router.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
 
   try {
