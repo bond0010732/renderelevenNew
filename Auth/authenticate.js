@@ -1724,7 +1724,7 @@ router.post('/delete-account', async (req, res) => {
   const {userId, fullName, email,  confirmationText } = req.body;
 
   // Validate input fields
-  if (!userId  || !email || !phone || !confirmationText) {
+  if (!userId  || !email || !fullName || !confirmationText) {
       return res.status(400).json({ error: 'All required fields must be filled.' });
   }
 
