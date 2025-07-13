@@ -1720,7 +1720,7 @@ router.post('/check-email',verifyToken, async (req, res) => {
 });
 
 // Create a new delete request
-router.post('/delete-account', verifyToken,async (req, res) => {
+router.post('/delete-account', async (req, res) => {
   const {userId, fullName, firstName, lastName, email, phone,  confirmationText } = req.body;
 
   // Validate input fields
