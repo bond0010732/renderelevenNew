@@ -1721,10 +1721,10 @@ router.post('/check-email',verifyToken, async (req, res) => {
 
 // Create a new delete request
 router.post('/delete-account', async (req, res) => {
-  const {userId, fullName, firstName, lastName, email, phone,  confirmationText } = req.body;
+  const {userId, fullName, email,  confirmationText } = req.body;
 
   // Validate input fields
-  if (!userId || !firstName || !lastName || !email || !phone || !confirmationText) {
+  if (!userId  || !email || !phone || !confirmationText) {
       return res.status(400).json({ error: 'All required fields must be filled.' });
   }
 
@@ -1733,10 +1733,7 @@ router.post('/delete-account', async (req, res) => {
       const newDeleteRequest = new DeleteRequestModel({
           userId,
           fullName,
-          firstName,
-          lastName,
           email,
-          phone,
           confirmationText,
       });
 
