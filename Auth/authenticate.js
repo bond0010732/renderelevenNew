@@ -1509,74 +1509,79 @@ router.put('/updateBankDetails/:userId', async (req, res) => {
 //   }
 // });
 
-router.post("/verifyEmailAndOTP", verifyToken, async (req, res) => {
+router.post('/verifyEmailAndOTP', async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    // Check if email and OTP are provided
-    if (!email || !otp) {
-      return res.status(400).json({ error: "Email and OTP are required" });
+    const unverifiedUser = await UnverifiedUser.findOne({ email });
+    if (!unverifiedUser) {
+      return res.status(400).json({ error: 'No registration found. Please register again.' });
     }
 
-    // Find user
-    const user = await OdinCircledbModel.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (unverifiedUser.otp !== otp) {
+      return res.status(400).json({ error: 'Invalid OTP' });
     }
 
-    // Find OTP record
-    const userOtpRecord = await UserOtpVerification.findOne({ userId: user._id });
-    if (!userOtpRecord || userOtpRecord.otp !== otp) {
-      return res.status(400).json({ error: "Invalid OTP" });
+    if (unverifiedUser.expiresAt < Date.now()) {
+      await UnverifiedUser.deleteOne({ email });
+      return res.status(400).json({ error: 'OTP expired. Please register again.' });
     }
 
-    // Mark user as verified
-    user.verified = true;
-    await user.save();
+    // Prevent duplicate verified users
+    const existingUser = await OdinCircledbModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
 
-    // 🔁 Handle Referral Logic
-    if (user.codeUsed) {
-      const referrer = await OdinCircledbModel.findOne({ referralCode: user.codeUsed });
+    // ✅ CREATE THE VERIFIED USER, INCLUDE CODE USED
+    const newUser = await OdinCircledbModel.create({
+      fullName: unverifiedUser.fullName,
+      email: unverifiedUser.email,
+      password: unverifiedUser.password,
+      image: unverifiedUser.image,
+      expoPushToken: unverifiedUser.expoPushToken,
+      verified: true,
+      referralCode: unverifiedUser.referralCode,   // their own new code
+      codeUsed: unverifiedUser.codeUsed || null,   // the code they used to sign up
+    });
+
+    // ✅ CREATE REFERRAL ENTRY IF codeUsed EXISTS
+    if (unverifiedUser.codeUsed) {
+      const referrer = await OdinCircledbModel.findOne({ referralCode: unverifiedUser.codeUsed });
 
       if (referrer) {
-        const alreadyReferred = referrer.referrals?.some(
-          ref => ref.referredUserId?.toString() === user._id.toString()
-        );
+        // Add to referrer's embedded referrals array
+        referrer.referrals.push({
+          referredUserId: newUser._id,
+          codeUsed: unverifiedUser.codeUsed,
+          email: newUser.email,
+          referralDate: new Date(),
+        });
+        await referrer.save();
 
-        if (!alreadyReferred) {
-          // Update referrer's embedded referral array
-          referrer.referrals.push({
-            referredUserId: user._id,
-            codeUsed: user.codeUsed,
-            email: user.email,
-            referralDate: new Date(),
-          });
-
-          await referrer.save();
-
-          // Create ReferralModel entry
-          await ReferralModel.create({
-            referredUserId: user._id,
-            referringUserId: referrer._id,
-            codeUsed: user.codeUsed,
-            email: user.email,
-            status: 'UnPaid',
-            referralDate: new Date(),
-          });
-        }
+        // Create standalone referral entry
+        await ReferralModel.create({
+          referredUserId: newUser._id,
+          referringUserId: referrer._id,
+          codeUsed: unverifiedUser.codeUsed,
+          email: newUser.email,
+          status: 'UnPaid',
+          referralDate: new Date(),
+        });
       }
     }
 
-    // ✅ Optionally delete OTP record
-    await UserOtpVerification.deleteOne({ userId: user._id });
+    // ✅ CLEAN UP
+    await UnverifiedUser.deleteOne({ email });
 
-    res.json({ message: "User verified successfully" });
+    res.status(201).json({ message: 'User verified and created successfully' });
 
   } catch (error) {
-    console.error("Error verifying email and OTP:", error.message);
-    res.status(400).json({ error: "Failed to verify email and OTP" });
+    console.error('OTP Verification Error:', error);
+    res.status(500).json({ error: 'Failed to verify user' });
   }
 });
+
 
 
 
