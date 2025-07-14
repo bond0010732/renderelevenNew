@@ -7,6 +7,11 @@ const referralSchema = new mongoose.Schema({
       required: true,
       ref: "User", // Refers to the User model
     },
+   referringUserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: "User"
+  },
     codeUsed: {
       type: String, // The referral code used during registration
       required: true,
@@ -14,9 +19,6 @@ const referralSchema = new mongoose.Schema({
     email: {
       type: String, // Email of the referred user
       required: true,
-    },
-    phone: {
-      type: String, // Phone number of the referred user
     },
     status: {
       type: String, // The status of the referral
