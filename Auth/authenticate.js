@@ -522,32 +522,27 @@ router.get("/paystack/callback", async (req, res) => {
 });
 
 
- // Verification route (Called by the callback automatically)
 router.post("/paystack/verify", async (req, res) => {
   const { reference, userId } = req.body;
 
   try {
-    // Verify the transaction with Paystack
+    // ✅ 1. Verify with Paystack
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
       { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
     );
 
     const transactionDetails = response.data.data;
-    if (!transactionDetails) {
-      return res.status(400).json({ message: "Invalid transaction data" });
-    }
-
-    if (transactionDetails.status !== "success") {
+    if (!transactionDetails || transactionDetails.status !== "success") {
       return res.status(400).json({ message: "Transaction verification failed" });
     }
 
-    const amount = parseFloat(transactionDetails.amount) / 100; // Convert kobo to NGN
+    const amount = parseFloat(transactionDetails.amount) / 100;
     if (isNaN(amount) || amount <= 0) {
       return res.status(400).json({ message: "Invalid transaction amount" });
     }
 
-    // Find and update the user's wallet balance
+    // ✅ 2. Update user's wallet balance
     const updatedUser = await OdinCircledbModel.findOneAndUpdate(
       { _id: userId },
       { $inc: { "wallet.balance": amount } },
@@ -558,20 +553,52 @@ router.post("/paystack/verify", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Save transaction record
-    const newTopUp = new TopUpModel({
+    // ✅ 3. Save top-up record
+    await new TopUpModel({
       userId: updatedUser._id,
-      amount: amount,
+      amount,
       transactionId: transactionDetails.id,
       txRef: transactionDetails.reference,
       email: transactionDetails.customer.email,
-    });
+    }).save();
 
-    await newTopUp.save();
+    // ✅ 4. Count successful top-ups for user
+    const topUpCount = await TopUpModel.countDocuments({ userId, amount: { $gt: 0 } });
+
+    // ✅ 5. Check if referred and qualifies for referral bonus
+    if (topUpCount === 2) {
+      const referral = await ReferralModel.findOne({ referredUserId: userId, status: "UnPaid" });
+
+      if (referral) {
+        const referrer = await OdinCircledbModel.findById(referral.referringUserId);
+
+        if (referrer) {
+          const bonusAmount = 500; // Set your referral bonus amount here
+
+          // ✅ Credit the referrer's wallet
+          referrer.wallet.cashoutbalance += bonusAmount;
+          await referrer.save();
+
+          // ✅ Mark referral as Paid
+          referral.status = "Paid";
+          await referral.save();
+
+          // ✅ Optional: log this referral reward
+          await TopUpModel.create({
+            userId: referrer._id,
+            amount: bonusAmount,
+            type: "referral_bonus",
+            transactionId: `REF-${Date.now()}`,
+            txRef: `Referral-${userId}`,
+            email: referrer.email,
+          });
+        }
+      }
+    }
 
     return res.json({
       status: true,
-      message: "Transaction verified and balance updated",
+      message: "Transaction verified, wallet updated",
       newBalance: updatedUser.wallet.balance,
     });
   } catch (error) {
@@ -579,6 +606,65 @@ router.post("/paystack/verify", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
+ // Verification route (Called by the callback automatically)
+// router.post("/paystack/verify", async (req, res) => {
+//   const { reference, userId } = req.body;
+
+//   try {
+//     // Verify the transaction with Paystack
+//     const response = await axios.get(
+//       `https://api.paystack.co/transaction/verify/${reference}`,
+//       { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+//     );
+
+//     const transactionDetails = response.data.data;
+//     if (!transactionDetails) {
+//       return res.status(400).json({ message: "Invalid transaction data" });
+//     }
+
+//     if (transactionDetails.status !== "success") {
+//       return res.status(400).json({ message: "Transaction verification failed" });
+//     }
+
+//     const amount = parseFloat(transactionDetails.amount) / 100; // Convert kobo to NGN
+//     if (isNaN(amount) || amount <= 0) {
+//       return res.status(400).json({ message: "Invalid transaction amount" });
+//     }
+
+//     // Find and update the user's wallet balance
+//     const updatedUser = await OdinCircledbModel.findOneAndUpdate(
+//       { _id: userId },
+//       { $inc: { "wallet.balance": amount } },
+//       { new: true }
+//     );
+
+//     if (!updatedUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // Save transaction record
+//     const newTopUp = new TopUpModel({
+//       userId: updatedUser._id,
+//       amount: amount,
+//       transactionId: transactionDetails.id,
+//       txRef: transactionDetails.reference,
+//       email: transactionDetails.customer.email,
+//     });
+
+//     await newTopUp.save();
+
+//     return res.json({
+//       status: true,
+//       message: "Transaction verified and balance updated",
+//       newBalance: updatedUser.wallet.balance,
+//     });
+//   } catch (error) {
+//     console.error("Error verifying transaction:", error.message);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 
 
 
