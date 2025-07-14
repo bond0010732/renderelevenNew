@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const User = require('../models/User'); // Import the User model
 // Referral Schema
 const referralSchema = new mongoose.Schema({
     referredUserId: {
