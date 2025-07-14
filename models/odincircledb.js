@@ -59,6 +59,7 @@ const OdinCircleSchema = new Schema({
     expoPushToken: String,
     unlockedCount: { type: Number,default: 10,},
     referralCode: { type: String, unique: true },
+    codeUsed: String,     // code used during sign-up (from referrer)
     referrals: [{
       referredUserId: mongoose.Schema.Types.ObjectId, // user ID who signed up using the referral code
       codeUsed: String, // the referral code they used
