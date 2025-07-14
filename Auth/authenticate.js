@@ -1181,6 +1181,33 @@ async function sendOTPByEmail(unverifiedUser, otp) {
   }
 }
 
+// GET /referral/summary/:userId
+router.get('/referral/summary/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await OdinCircledbModel.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const referrals = await ReferralModel.find({ referringUserId: userId });
+
+    const totalReferrals = referrals.length;
+    const activated = referrals.filter(r => r.status === "Paid");
+    const payout = activated.length * 500; // reward per referral
+
+    res.json({
+      referralCode: user.referralCode,
+      totalReferrals,
+      activatedCount: activated.length,
+      payout,
+    });
+  } catch (error) {
+    console.error('Referral summary error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch referral summary' });
+  }
+});
+
+
 router.post('/check-user', async (req, res) => {
   try {
     const { fullName, email } = req.body;
