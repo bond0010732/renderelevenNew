@@ -39,6 +39,7 @@ unlockedCount: {
     type: String,
     default: null,
   },
+codeUsed: String,     // code used during sign-up (from referrer)
 
   expoPushToken: {
     type: String,
