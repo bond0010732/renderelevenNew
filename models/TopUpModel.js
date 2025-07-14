@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const User = require('../models/User'); // Import the User model
 
 const TopUpSchema = new mongoose.Schema({
      userId: {
