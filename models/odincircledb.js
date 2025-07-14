@@ -62,7 +62,7 @@ const OdinCircleSchema = new Schema({
    codeUsed: {
   type: String,
   default: null,
-}
+},
      // code used during sign-up (from referrer)
     referrals: [{
       referredUserId: mongoose.Schema.Types.ObjectId, // user ID who signed up using the referral code
