@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
 const TopUpSchema = new mongoose.Schema({
-    userId: {
-        type: String,
-        required: true,
-    },
+     userId: {
+    type: mongoose.Schema.Types.ObjectId, // use ObjectId instead of String
+    ref: 'User',
+    required: true,
+  },
     amount: {
         type: Number,
         required: true,
@@ -14,9 +15,19 @@ const TopUpSchema = new mongoose.Schema({
         required: true,
     },
     transactionId: {
-        type: Number,
+        type: String, // Paystack sometimes returns as string
         required: true,
     },
+    type: {
+    type: String,
+    enum: ['user_topup', 'referral_bonus'],
+    default: 'user_topup',
+  },
+  causedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null, // Used when type is 'referral_bonus' to know which referral triggered the bonus
+  },
     createdAt: {
         type: Date,
         default: Date.now,
