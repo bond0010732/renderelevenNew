@@ -700,69 +700,86 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    // Find unverified user
+    // Validate input
+    if (!email || !otp) {
+      return res.status(400).json({ error: 'Email and OTP are required' });
+    }
+
+    // Find the unverified user
     const unverifiedUser = await UnverifiedUser.findOne({ email });
     if (!unverifiedUser) {
       return res.status(400).json({ error: 'No registration found. Please register again.' });
     }
 
+    // Validate OTP
     if (unverifiedUser.otp !== otp) {
       return res.status(400).json({ error: 'Invalid OTP' });
     }
 
+    // Check OTP expiry
     if (unverifiedUser.expiresAt < Date.now()) {
       await UnverifiedUser.deleteOne({ email });
       return res.status(400).json({ error: 'OTP expired. Please register again.' });
     }
 
-    // Check if user already exists in main collection (just in case)
+    // Prevent duplicate user
     const existingUser = await OdinCircledbModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Create user in main collection
+    // ✅ Create the verified user
     const newUser = await OdinCircledbModel.create({
       fullName: unverifiedUser.fullName,
       email: unverifiedUser.email,
       password: unverifiedUser.password,
-      unlockedCount: 10,
       image: unverifiedUser.image,
       expoPushToken: unverifiedUser.expoPushToken,
+      unlockedCount: 10,
       verified: true,
-      referralCode: generateReferralCode(), // You must define this helper
+      referralCode: generateReferralCode(),           // generate new code for this user
+      codeUsed: unverifiedUser.codeUsed || null       // track code used (if any)
     });
 
-    // --- Handle referral if exists
-    const { referralCode } = unverifiedUser;
-    if (referralCode) {
-      const referredBy = await OdinCircledbModel.findOne({ referralCode });
+    // ✅ Handle referral if codeUsed exists
+    if (unverifiedUser.codeUsed) {
+      const referringUser = await OdinCircledbModel.findOne({
+        referralCode: unverifiedUser.codeUsed
+      });
 
-      if (referredBy) {
-        const isAlreadyReferred = referredBy.referrals?.some(
+      if (referringUser) {
+        const isAlreadyReferred = referringUser.referrals?.some(
           ref => ref.referredUserId.toString() === newUser._id.toString()
         );
 
         if (!isAlreadyReferred) {
-          referredBy.referrals.push({
+          // Add to referrer's embedded list
+          referringUser.referrals.push({
             referredUserId: newUser._id,
-            codeUsed: referralCode,
+            codeUsed: unverifiedUser.codeUsed,
             email: newUser.email,
+            referralDate: new Date(),
           });
-          await referredBy.save();
+          await referringUser.save();
 
+          // Create referral tracking entry
           await ReferralModel.create({
             referredUserId: newUser._id,
-            referringUserId: referredBy._id,
-            codeUsed: referralCode,
+            referringUserId: referringUser._id,
+            codeUsed: unverifiedUser.codeUsed,
             email: newUser.email,
             status: 'UnPaid',
+            referralDate: new Date(),
           });
+
+          console.log(`✅ Referral recorded: ${newUser.email} referred by ${referringUser.email}`);
         }
+      } else {
+        console.warn(`⚠️ No matching referring user found for code: ${unverifiedUser.codeUsed}`);
       }
     }
 
-    // --- Register device
+    // ✅ Register device
     if (unverifiedUser.expoPushToken) {
       let device = await Device.findOne({ expoPushToken: unverifiedUser.expoPushToken });
 
@@ -778,7 +795,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       await device.save();
     }
 
-    // --- Create Wallet
+    // ✅ Create wallet
     const wallet = await WalletModel.create({
       userId: newUser._id,
       balance: 0,
@@ -786,7 +803,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       transactions: [],
     });
 
-    // --- Initial Chat Setup
+    // ✅ Create empty chat self-thread (optional)
     const chat = await ChatModel.create({
       sender: newUser._id,
       receiver: newUser._id,
@@ -801,24 +818,26 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
+    // Link chat to user
     newUser.chat = [chat._id];
     await newUser.save();
 
-    // Clean up temp user
+    // ✅ Cleanup unverified record
     await UnverifiedUser.deleteOne({ email });
 
     res.status(201).json({
       message: 'Account verified and created successfully',
       user: newUser,
       wallet,
-      chat,
+      chat
     });
 
   } catch (err) {
-    console.error('Error verifying OTP:', err);
+    console.error('❌ Error verifying OTP:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
