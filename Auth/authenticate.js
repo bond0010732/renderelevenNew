@@ -970,6 +970,7 @@ const fullName = req.body.fullName?.trim().toLowerCase();
       image: result.secure_url,  
       expoPushToken,
       referralCode: generateReferralCode(),
+      //codeUsed: unverifiedUser.codeUsed || null,
     });
 
 
@@ -1470,42 +1471,112 @@ router.put('/updateBankDetails/:userId', async (req, res) => {
 
 
 
-router.post("/verifyEmailAndOTP",verifyToken, async (req, res) => {
+// router.post("/verifyEmailAndOTP",verifyToken, async (req, res) => {
+//   try {
+//     const { email, otp } = req.body;
+    
+//     // Check if email and OTP are provided and not empty
+//     if (!email) {
+//       return res.status(400).json({ error: "Email is required" });
+//     }
+
+//     if (!otp) {
+//       return res.status(400).json({ error: "OTP is required" });
+//     }
+
+//     // Find the user by email
+//     let user = await OdinCircledbModel.findOne({ email });
+
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     let userOtpRecord = await UserOtpVerification.findOne({ userId: user._id });
+
+//     if (!userOtpRecord || userOtpRecord.otp !== otp) {
+//       return res.status(400).json({ error: "Invalid OTP" });
+//     }
+
+//     user.verified = true;
+//     await user.save();
+
+//     res.json({ message: "User verified successfully" });
+//   } catch (error) {
+//     // Handle any errors that occur during the verification process
+//     console.error('Error verifying email and OTP:', error.message);
+//     res.status(400).json({ error: "Failed to verify email and OTP" });
+//   }
+// });
+
+router.post("/verifyEmailAndOTP", verifyToken, async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
-    // Check if email and OTP are provided and not empty
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
+
+    // Check if email and OTP are provided
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Email and OTP are required" });
     }
 
-    if (!otp) {
-      return res.status(400).json({ error: "OTP is required" });
-    }
-
-    // Find the user by email
-    let user = await OdinCircledbModel.findOne({ email });
-
+    // Find user
+    const user = await OdinCircledbModel.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    let userOtpRecord = await UserOtpVerification.findOne({ userId: user._id });
-
+    // Find OTP record
+    const userOtpRecord = await UserOtpVerification.findOne({ userId: user._id });
     if (!userOtpRecord || userOtpRecord.otp !== otp) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
 
+    // Mark user as verified
     user.verified = true;
     await user.save();
 
+    // 🔁 Handle Referral Logic
+    if (user.codeUsed) {
+      const referrer = await OdinCircledbModel.findOne({ referralCode: user.codeUsed });
+
+      if (referrer) {
+        const alreadyReferred = referrer.referrals?.some(
+          ref => ref.referredUserId?.toString() === user._id.toString()
+        );
+
+        if (!alreadyReferred) {
+          // Update referrer's embedded referral array
+          referrer.referrals.push({
+            referredUserId: user._id,
+            codeUsed: user.codeUsed,
+            email: user.email,
+            referralDate: new Date(),
+          });
+
+          await referrer.save();
+
+          // Create ReferralModel entry
+          await ReferralModel.create({
+            referredUserId: user._id,
+            referringUserId: referrer._id,
+            codeUsed: user.codeUsed,
+            email: user.email,
+            status: 'UnPaid',
+            referralDate: new Date(),
+          });
+        }
+      }
+    }
+
+    // ✅ Optionally delete OTP record
+    await UserOtpVerification.deleteOne({ userId: user._id });
+
     res.json({ message: "User verified successfully" });
+
   } catch (error) {
-    // Handle any errors that occur during the verification process
-    console.error('Error verifying email and OTP:', error.message);
+    console.error("Error verifying email and OTP:", error.message);
     res.status(400).json({ error: "Failed to verify email and OTP" });
   }
 });
+
 
 
 const transporter = nodemailer.createTransport({
