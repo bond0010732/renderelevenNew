@@ -562,11 +562,11 @@ router.post("/paystack/verify", async (req, res) => {
       email: transactionDetails.customer.email,
     }).save();
 
-    // ✅ 4. Count successful top-ups for user
-    const topUpCount = await TopUpModel.countDocuments({ userId, amount: { $gt: 0 } });
+       // Step 4: Check if this is the user's FIRST top-up
+    const topUpCount = await TopUpModel.countDocuments({ userId: updatedUser._id });
 
     // ✅ 5. Check if referred and qualifies for referral bonus
-    if (topUpCount === 2) {
+    if (topUpCount === 1) {
       const referral = await ReferralModel.findOne({ referredUserId: userId, status: "UnPaid" });
 
       if (referral) {
