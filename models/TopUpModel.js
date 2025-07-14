@@ -1,12 +1,10 @@
 const mongoose = require('mongoose');
-const User = require('../models/User'); // Import the User model
 
 const TopUpSchema = new mongoose.Schema({
      userId: {
-    type: mongoose.Schema.Types.ObjectId, // use ObjectId instead of String
-    ref: 'User',
-    required: true,
-  },
+        type: String,
+        required: true,
+    },
     amount: {
         type: Number,
         required: true,
