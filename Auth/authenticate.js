@@ -370,7 +370,19 @@ router.post("/paystack/withdraw", async (req, res) => {
   }
 });
 
-   
+   router.get('/verify-bankName', async (req, res) => {
+  const { accountNumber, bankCode } = req.query;
+  try {
+    const response = await axios.get(
+      `https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`,
+      { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+    );
+    res.json(response.data);
+  } catch (err) {
+    res.status(400).json({ message: 'Unable to verify account', error: err.message });
+  }
+});
+
      router.post("/paystack/finalize-withdrawal",verifyToken, async (req, res) => {
   const { transfer_code, otp, userId, amount, fullName } = req.body;
 
