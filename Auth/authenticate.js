@@ -844,12 +844,16 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
   try {
     let { fullName, email, password, expoPushToken,image, referralCode, unlockedCount } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
+ if (!req.file) return res.status(400).json({ error: 'Profile image is required' });
+      if (!fullName || !email || !password) return res.status(400).json({ error: 'Missing required fields' });
 
     email = email.trim().toLowerCase();
     fullName = fullName.trim().toLowerCase();
+
+     // Password strength check
+      if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+      }
 
     // Check if already verified
     const existingVerified = await OdinCircledbModel.findOne({ email });
@@ -864,13 +868,12 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
     }
 
     // Check referral
-    let referredBy = null;
-    if (referralCode) {
-      referredBy = await OdinCircledbModel.findOne({ referralCode });
-      if (!referredBy) {
-        return res.status(400).json({ error: 'Invalid referral code' });
+      let referredBy = null;
+      if (referralCode) {
+        if (referralCode.length > 20) return res.status(400).json({ error: 'Invalid referral code format' });
+        referredBy = await OdinCircledbModel.findOne({ referralCode });
+        if (!referredBy) return res.status(400).json({ error: 'Invalid referral code' });
       }
-    }
 
     // Upload image to Cloudinary
     const result = await new Promise((resolve, reject) => {
@@ -1676,6 +1679,29 @@ router.post('/register-device', async (req, res) => {
   }
 });
 
+const saveDevice = async (expoPushToken, userId) => {
+  try {
+    let device = await Device.findOne({ expoPushToken });
+
+    if (!device) {
+      console.log('No existing device found, creating a new one.');
+      device = new Device({
+        expoPushToken,
+        users: [{ _id: userId }],
+      });
+    } else {
+      if (device.users && !device.users.some(user => user._id.toString() === userId.toString())) {
+        device.users.push({ _id: userId });
+      }
+    }
+
+    await device.save();
+    return true;
+  } catch (error) {
+    console.error('Error saving expoPushToken:', error);
+    return false;
+  }
+};
 
 // Route to update device registration with user ID
 router.post('/update-device',verifyToken, async (req, res) => {
