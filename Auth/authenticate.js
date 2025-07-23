@@ -2006,7 +2006,7 @@ router.post('/delete-account', async (req, res) => {
 
 router.post('/resendOTP', async (req, res) => {
   try {
-      const { email, userId } = req.body;
+      const { email } = req.body;
 
       // Generate a new OTP (you can use any OTP generation logic here)
       const newOTP = Math.floor(1000 + Math.random() * 9000); // Generates a 4-digit OTP
@@ -2018,7 +2018,7 @@ router.post('/resendOTP', async (req, res) => {
        }
  
       // Log the generated OTP
-      console.log(`Generated OTP for ${userId} ${email}: ${newOTP}`);
+      console.log(`Generated OTP for  ${email}: ${newOTP}`);
 
       // Update or create a new OTP record for the user by email
       await UserOtpVerification.findOneAndUpdate(
