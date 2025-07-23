@@ -2073,7 +2073,7 @@ async function ResendOTPByEmail(user, newOTP) {
           <p style="color: #000; margin-bottom: 10px; font-size: 16px">Hello ${user.fullName},</p>
           <h2 style="color: #000; margin-bottom: 10px; font-size: 24px">Confirm Your Identity</h2>
           <p style="font-size: 16px; margin-bottom: 20px;">Thank you for signing up to betxcircle. Here's your One Time Password to verify your account.</p>
-          <h3 style="font-size: 24px; color: #000; margin-bottom: 10px; background-color: aliceblue; padding: 20px 0; text-align: center";>${otp}</h3>
+          <h3 style="font-size: 24px; color: #000; margin-bottom: 10px; background-color: aliceblue; padding: 20px 0; text-align: center";>${newOTP}</h3>
           <p style="font-size: 16px; margin-bottom: 20px;">If you have any complaint please contact our support team immediately via in-app or email.</p>
           <p style="font-size: 16px; margin-bottom: 20px;">odincirclex@gmail.com</p>
           <p style="font-size: 16px;">Please use this OTP to complete your registration process.</p>
