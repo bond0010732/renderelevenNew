@@ -604,6 +604,16 @@ router.post("/paystack/verify", async (req, res) => {
             txRef: `Referral-${userId}`,
             email: referrer.email,
           });
+
+            // --- Send Push Notification ---
+    if (referrer.expoPushToken && Expo.isExpoPushToken(referrer.expoPushToken)) {
+      await expo.sendPushNotificationsAsync([
+        {
+          to: referrer.expoPushToken,
+          title: "Referral Bonus 🎉",
+          body: `You've earned ₦${bonusAmount} from a friend's first top-up!`,
+        },
+      ]);
         }
       }
     }
