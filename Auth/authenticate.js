@@ -2004,7 +2004,7 @@ router.post('/delete-account', async (req, res) => {
   }
 });
 
-router.post('/resendOTP',verifyToken, async (req, res) => {
+router.post('/resendOTP', async (req, res) => {
   try {
       const { email, userId } = req.body;
 
