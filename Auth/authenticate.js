@@ -533,7 +533,6 @@ router.get("/paystack/callback", async (req, res) => {
   }
 });
 
-
 router.post("/paystack/verify", async (req, res) => {
   const { reference, userId } = req.body;
 
@@ -574,7 +573,7 @@ router.post("/paystack/verify", async (req, res) => {
       email: transactionDetails.customer.email,
     }).save();
 
-       // Step 4: Check if this is the user's FIRST top-up
+    // Step 4: Check if this is the user's FIRST top-up
     const topUpCount = await TopUpModel.countDocuments({ userId: updatedUser._id });
 
     // ✅ 5. Check if referred and qualifies for referral bonus
@@ -605,15 +604,16 @@ router.post("/paystack/verify", async (req, res) => {
             email: referrer.email,
           });
 
-            // --- Send Push Notification ---
-    if (referrer.expoPushToken && Expo.isExpoPushToken(referrer.expoPushToken)) {
-      await expo.sendPushNotificationsAsync([
-        {
-          to: referrer.expoPushToken,
-          title: "Referral Bonus 🎉",
-          body: `You've earned ₦${bonusAmount} from a friend's first top-up!`,
-        },
-      ]);
+          // --- Send Push Notification ---
+          if (referrer.expoPushToken && Expo.isExpoPushToken(referrer.expoPushToken)) {
+            await expo.sendPushNotificationsAsync([
+              {
+                to: referrer.expoPushToken,
+                title: "Referral Bonus 🎉",
+                body: `You've earned ₦${bonusAmount} from a friend's first top-up!`,
+              },
+            ]);
+          }
         }
       }
     }
