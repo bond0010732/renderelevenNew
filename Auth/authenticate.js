@@ -234,39 +234,39 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
     },
   });
 
-  const emailOptions = {
-    from: 'odincirclex@gmail.com',
-    to: user.email,
-    subject: 'Withdrawal Notification',
-    html: `
- <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 20px; max-width: 520px; margin: 0 auto; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.06);">
+ const emailOptions = {
+  from: 'odincirclex@gmail.com',
+  to: user.email,
+  subject: 'Withdrawal Notification',
+  html: `
+<div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; padding: 20px; max-width: 520px; margin: 0 auto; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.05);">
   <!-- Header -->
-  <div style="background-color: #0a0f2c; padding: 16px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h3 style="margin: 0; font-size: 16px; color: #fff;">Withdrawal Successful</h3>
+  <div style="background-color: #111; padding: 16px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h2 style="margin: 0; font-size: 17px; color: #fff;">Withdrawal Successful</h2>
   </div>
 
   <!-- Body -->
-  <div style="background-color: #ffffff; padding: 20px; border-radius: 0 0 10px 10px;">
-    <p style="font-size: 15px; margin: 0 0 16px; color: #111;">Hi <strong>${user.fullName}</strong>,</p>
+  <div style="background-color: #fff; padding: 24px; border-radius: 0 0 12px 12px; color: #222;">
+    <p style="font-size: 15px; margin: 0 0 16px;">Hi <strong>${user.fullName}</strong>,</p>
 
     <p style="font-size: 15px; text-align: center; margin-bottom: 20px;">
-      ₦<strong style="color:#16a34a;">${withdrawalAmount.toFixed(2)}</strong> has been sent to your account.
+      ₦<strong>${withdrawalAmount.toFixed(2)}</strong> has been sent to your account.
     </p>
 
-    <div style="background-color: #f3f4f6; padding: 12px 16px; border-radius: 8px; font-size: 14px; color: #333;">
+    <div style="background-color: #f0f0f0; padding: 14px 18px; border-radius: 8px; font-size: 14px;">
       <div><strong>ID:</strong> ${transaction._id}</div>
       <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
-      <div><strong>Status:</strong> <span style="color:#16a34a;">Success</span></div>
+      <div><strong>Status:</strong> <span style="color:#111;">Success</span></div>
     </div>
 
-    <p style="font-size: 13px; color: #6b7280; margin-top: 20px; text-align: center;">
-      Need help? <a href="mailto:odincirclex@gmail.com" style="color: #2563eb; text-decoration: none;">Contact Support</a>
+    <p style="font-size: 13px; color: #666; margin-top: 24px; text-align: center;">
+      Need help? <a href="mailto:odincirclex@gmail.com" style="color: #333; text-decoration: underline;">Contact Support</a>
     </p>
   </div>
 </div>
+`,
+};
 
-    `,
-  };
 
   await transporter.sendMail(emailOptions);
 
