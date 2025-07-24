@@ -306,7 +306,7 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
 };
 
 router.post("/paystack/withdraw", async (req, res) => {
-  const { name, account_number, bank_name, amount, currency, otp,totalAmout, userId, title, message, fullName } = req.body;
+  const { name, account_number, bank_name, amount, currency, otp, totalAmount, userId, title, message, fullName } = req.body;
 
      //console.log('userId, otp, name, fullName')
 
