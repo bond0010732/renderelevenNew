@@ -3315,10 +3315,13 @@ router.post('/removeUserFromBatch', async (req, res) => {
       return res.status(404).json({ message: 'Batch not found' });
     }
 
-    // Remove the user from joinedUsers
-   batch.joinedUsers = batch.joinedUsers.filter((id) => id.toString() !== userId.toString());
+    // Remove the user from joinedUsers (since it's an array of objects)
+    batch.joinedUsers = batch.joinedUsers.filter(
+      (user) => user._id.toString() !== userId.toString()
+    );
 
-    batch.PlayersInRoom = Math.max(0, batch.PlayersInRoom - 1);
+    // Decrease players count safely
+    batch.PlayersInRoom = Math.max(0, batch.joinedUsers.length);
 
     await batch.save();
 
@@ -3328,6 +3331,7 @@ router.post('/removeUserFromBatch', async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 router.post('/addTime', async (req, res) => {
   const { userId, cost } = req.body;
