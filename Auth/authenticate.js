@@ -305,23 +305,80 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
   };
 };
 
+
+const verifyWithdrawalOtpp = async ({ userId, otp, totalAmount, amount, title, message, fullName }) => {
+  if (!otp || !userId) {
+    throw new Error('Missing OTP or user ID');
+  }
+
+  const otpRecord = await TransOtpVerify.findOne({ userId, otp });
+  if (!otpRecord) {
+    throw new Error('Incorrect or expired OTP');
+  }
+
+  // ✅ Optional: Check if OTP is expired (e.g., older than 10 minutes)
+  const now = new Date();
+  const createdAt = new Date(otpRecord.createdAt);
+  const diffInMinutes = (now - createdAt) / (1000 * 60);
+  if (diffInMinutes > 10) {
+    await TransOtpVerify.deleteOne({ _id: otpRecord._id });
+    throw new Error('OTP has expired');
+  }
+
+  // ✅ Mark OTP as used
+  await TransOtpVerify.deleteOne({ _id: otpRecord._id });
+
+  return {
+    verified: true,
+    info: 'OTP verified successfully',
+  };
+};
+
 router.post("/paystack/withdraw", async (req, res) => {
-  const { name, account_number, bank_name, amount, currency, otp, totalAmount, userId, title, message, fullName } = req.body;
+  const {
+    name,
+    account_number,
+    bank_name,
+    amount,
+    currency,
+    otp,
+    totalAmount,
+    userId,
+    title,
+    message,
+    fullName
+  } = req.body;
 
-     //console.log('userId, otp, name, fullName')
-
-  if (!name || !account_number || !bank_name || !amount, !userId) {
+  if (!name || !account_number || !bank_name || !amount || !userId) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
   try {
-    const bankResponse = await axios.get(`${PAYSTACK_BASE_URL}/bank`, { headers: paystackHeaders });
+    // ✅ Step 1: Verify OTP before making any Paystack request
+    const otpVerificationResult = await verifyWithdrawalOtp({
+      userId,
+      otp,
+      totalAmount,
+      amount,
+      title,
+      message,
+      fullName,
+    });
+
+    // ✅ Step 2: Find the bank code from Paystack
+    const bankResponse = await axios.get(`${PAYSTACK_BASE_URL}/bank`, {
+      headers: paystackHeaders,
+    });
+
     const bank = bankResponse.data.data.find(
       (b) => b.name.toLowerCase() === bank_name.toLowerCase()
     );
 
-    if (!bank) return res.status(400).json({ error: "Bank not found" });
+    if (!bank) {
+      return res.status(400).json({ error: "Bank not found" });
+    }
 
+    // ✅ Step 3: Create transfer recipient
     const recipientResponse = await axios.post(
       `${PAYSTACK_BASE_URL}/transferrecipient`,
       {
@@ -336,28 +393,19 @@ router.post("/paystack/withdraw", async (req, res) => {
 
     const recipient_code = recipientResponse.data.data.recipient_code;
 
+    // ✅ Step 4: Initiate transfer
     const transferResponse = await axios.post(
       `${PAYSTACK_BASE_URL}/transfer`,
       {
         source: "balance",
-        amount: parseInt(amount) * 100,
+        amount: parseInt(amount) * 100, // convert to kobo
         recipient: recipient_code,
         reason: "Withdrawal",
       },
       { headers: paystackHeaders }
     );
 
-    // 🔁 Call withdrawal OTP verification logic
-    const otpVerificationResult = await verifyWithdrawalOtp({
-      userId,
-      otp,
-      totalAmount: totalAmount,
-      amount,
-      title,
-      message,
-      fullName,
-    });
-
+    // ✅ Step 5: Respond to client
     res.json({
       success: true,
       message: "Withdrawal successfully completed",
@@ -366,7 +414,10 @@ router.post("/paystack/withdraw", async (req, res) => {
     });
   } catch (error) {
     console.error("Withdrawal error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Withdrawal process failed", details: error.message });
+    res.status(500).json({
+      error: "Withdrawal process failed",
+      details: error.response?.data?.message || error.message,
+    });
   }
 });
 
