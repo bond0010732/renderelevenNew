@@ -197,7 +197,8 @@ router.post('/verify-otpwithdraw', async (req, res) => {
 
 
 const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, message, fullName }) => {
-  //const otpRecord = await TransOtpVerify.findOne({ userId, otp });
+
+  const otpRecord = await TransOtpVerify.findOne({ userId, otp });
  if (!otpRecord) throw new Error('Invalid or expired OTP');
 
   const user = await OdinCircledbModel.findById(userId);
