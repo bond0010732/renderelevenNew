@@ -2401,7 +2401,7 @@ router.get('/check-fullname',verifyToken, async (req, res) => {
 });
 
 
-router.get("/check-username",verifyToken, async (req, res) => {
+router.get("/check-username", async (req, res) => {
    const fullName = req.query.fullName?.trim().toLowerCase();
 
   try {
