@@ -252,7 +252,7 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
     <p style="font-size: 15px; margin: 0 0 16px;">Hi <strong>${user.fullName}</strong>,</p>
 
     <p style="font-size: 15px; text-align: center; margin-bottom: 20px;">
-      ₦<strong>${withdrawalAmount.toFixed(2)}</strong> has been sent to your account.
+      ₦<strong>${amount.toFixed(2)}</strong> has been sent to your account.
     </p>
 
     <div style="background-color: #f0f0f0; padding: 14px 18px; border-radius: 8px; font-size: 14px;">
@@ -284,7 +284,7 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
     to: device.expoPushToken,
     sound: 'default',
     title: title || 'Withdrawal Notification',
-    body: message || `Your withdrawal of NGN ${withdrawalAmount.toFixed(2)} was successful`,
+    body:  `Your withdrawal of NGN ${amount.toFixed(2)} was successful`,
   };
 
   const chunks = expo.chunkPushNotifications([notificationMessage]);
@@ -635,7 +635,7 @@ router.post("/paystack/verify", async (req, res) => {
               {
                 to: referrer.expoPushToken,
                 title: "Referral Bonus 🎉",
-                body: `You've earned ₦${bonusAmount} from a friend's first top-up!`,
+                body: `💸 Referral bonus unlocked! ₦${bonusAmount} has been added to your wallet.`,
               },
             ]);
           }
