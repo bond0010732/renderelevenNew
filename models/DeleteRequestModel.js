@@ -7,20 +7,8 @@ const DeleteSchema = new mongoose.Schema({
     fullName: {
         type: String,
     },
-    firstName: {
-        type: String,
-        required: true,
-    },
-    lastName: {
-        type: String,
-        required: true,
-    },
     email: {
         type: String,
-        required: true,
-    },
-    phone: {
-        type: Number,
         required: true,
     },
     confirmationText: {
