@@ -93,6 +93,25 @@ const paystackHeaders = {
   "Content-Type": "application/json",
 };
 
+router.post('/wallet/deduct', async (req, res) => {
+  const { userId, amount } = req.body;
+
+  if (!userId || !amount) {
+    return res.status(400).json({ error: 'Missing userId or amount' });
+  }
+
+  const user = await OdinCircledbModel.findById(userId);
+  if (!user || !user.wallet || user.wallet.balance < amount) {
+    return res.status(400).json({ error: 'Insufficient balance' });
+  }
+
+  user.wallet.balance -= amount;
+  await user.save();
+
+  res.json({ success: true, newBalance: user.wallet.balance });
+});
+
+
 // GET /userwinner/:userId?page=1&limit=10
 router.get('/userwinner/:userId', async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
