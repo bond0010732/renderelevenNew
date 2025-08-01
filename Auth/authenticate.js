@@ -93,23 +93,37 @@ const paystackHeaders = {
   "Content-Type": "application/json",
 };
 
-router.post('/wallet/deduct', async (req, res) => {
+router.post('/api/wallet/deduct', async (req, res) => {
   const { userId, amount } = req.body;
 
   if (!userId || !amount) {
     return res.status(400).json({ error: 'Missing userId or amount' });
   }
 
-  const user = await OdinCircledbModel.findById(userId);
-  if (!user || !user.wallet || user.wallet.balance < amount) {
-    return res.status(400).json({ error: 'Insufficient balance' });
+  try {
+    const user = await OdinCircledbModel.findById(userId);
+    if (!user || !user.wallet) {
+      return res.status(404).json({ error: 'User not found or wallet missing' });
+    }
+
+    if (user.wallet.balance < amount) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+
+    user.wallet.balance -= amount;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `₦${amount} deducted successfully`,
+      newBalance: user.wallet.balance,
+    });
+  } catch (err) {
+    console.error('💥 Error deducting balance:', err);
+    res.status(500).json({ error: 'Server error while deducting balance' });
   }
-
-  user.wallet.balance -= amount;
-  await user.save();
-
-  res.json({ success: true, newBalance: user.wallet.balance });
 });
+
 
 
 // GET /userwinner/:userId?page=1&limit=10
