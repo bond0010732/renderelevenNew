@@ -138,7 +138,7 @@ router.get('/api/user/:id', async (req, res) => {
   const userId = req.params.id;
 
   try {
-    const user = await OdinCircledbModel.findById(userId).select('email fullName wallet');
+    const user = await OdinCircledbModel.findById(userId).select('email fullName wallet image');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -150,6 +150,8 @@ router.get('/api/user/:id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
 
 router.post('/verify-otpwithdraw', async (req, res) => {
   const { userId, otp, totalAmount } = req.body;
