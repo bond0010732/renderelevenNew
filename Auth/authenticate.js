@@ -690,65 +690,6 @@ router.post("/paystack/verify", async (req, res) => {
 });
 
 
- // Verification route (Called by the callback automatically)
-// router.post("/paystack/verify", async (req, res) => {
-//   const { reference, userId } = req.body;
-
-//   try {
-//     // Verify the transaction with Paystack
-//     const response = await axios.get(
-//       `https://api.paystack.co/transaction/verify/${reference}`,
-//       { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
-//     );
-
-//     const transactionDetails = response.data.data;
-//     if (!transactionDetails) {
-//       return res.status(400).json({ message: "Invalid transaction data" });
-//     }
-
-//     if (transactionDetails.status !== "success") {
-//       return res.status(400).json({ message: "Transaction verification failed" });
-//     }
-
-//     const amount = parseFloat(transactionDetails.amount) / 100; // Convert kobo to NGN
-//     if (isNaN(amount) || amount <= 0) {
-//       return res.status(400).json({ message: "Invalid transaction amount" });
-//     }
-
-//     // Find and update the user's wallet balance
-//     const updatedUser = await OdinCircledbModel.findOneAndUpdate(
-//       { _id: userId },
-//       { $inc: { "wallet.balance": amount } },
-//       { new: true }
-//     );
-
-//     if (!updatedUser) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     // Save transaction record
-//     const newTopUp = new TopUpModel({
-//       userId: updatedUser._id,
-//       amount: amount,
-//       transactionId: transactionDetails.id,
-//       txRef: transactionDetails.reference,
-//       email: transactionDetails.customer.email,
-//     });
-
-//     await newTopUp.save();
-
-//     return res.json({
-//       status: true,
-//       message: "Transaction verified and balance updated",
-//       newBalance: updatedUser.wallet.balance,
-//     });
-//   } catch (error) {
-//     console.error("Error verifying transaction:", error.message);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// });
-
-
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -3778,68 +3719,9 @@ router.put('/faceoffbatches/:id', async (req, res) => {
 
 
 
-// router.get('/faceoffanswer', async (req, res) => {
-//   try {
-//     const { batchId,userId, page = 1, limit = 10 } = req.query;
-
-//   if (batchId && userId) {
-//   const record = await FaceOffAnswer.findOne({ batchId, userId });
-//   if (!record) {
-//     return res.status(404).json({ message: 'Record not found' });
-//   }
-//   return res.status(200).json({ data: [record], total: 1, currentPage: 1, totalPages: 1 });
-// }
-//     const skip = (parseInt(page) - 1) * parseInt(limit);
-//     const total = await FaceOffAnswer.countDocuments();
-//     const records = await FaceOffAnswer.find()
-//       .sort({ createdAt: -1 })
-//       .skip(skip)
-//       .limit(parseInt(limit));
-
-//     res.status(200).json({
-//       data: records,
-//       currentPage: parseInt(page),
-//       totalPages: Math.ceil(total / limit),
-//       totalItems: total,
-//     });
-//   } catch (error) {
-//     console.error('Error fetching faceoff answers:', error);
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
 
 
 
-
-
-
-
-
-// Sample route to fetch batch answers
-// GET /api/batch-answers?page=1&limit=10
-// router.get('/api/batch-answers',verifyToken, async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 10;
-//     const skip = (page - 1) * limit;
-
-//     const total = await BatchAnswer.countDocuments();
-//     const batchAnswers = await BatchAnswer.find()
-//       .sort({ createdAt: -1 })
-//       .skip(skip)
-//       .limit(limit);
-
-//     return res.status(200).json({
-//       data: batchAnswers,
-//       currentPage: page,
-//       totalPages: Math.ceil(total / limit),
-//       totalItems: total,
-//     });
-//   } catch (error) {
-//     console.error('Error fetching batch answers:', error);
-//     return res.status(500).json({ message: 'Server error' });
-//   }
-// });
 
 router.get('/api/trivia/scoreboard', async (req, res) => {
   try {
@@ -4153,10 +4035,7 @@ if (!batch) {
         return res.status(400).json({ message: `Invalid bet for user ${intent.userId}` });
       }
 
-      //if (userBalance < userBet) {
-        //console.log(`❌ Insufficient balance for user ${intent.userId}`);
-        //return res.status(400).json({ message: `Insufficient balance for user ${intent.userId}` });
-      //}
+
     }
 
     // Deduct balances and update batch
