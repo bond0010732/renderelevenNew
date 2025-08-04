@@ -3725,8 +3725,12 @@ router.put('/faceoffbatches/:id', async (req, res) => {
 
 router.get('/api/trivia/scoreboard', async (req, res) => {
   try {
-    const batchAnswers = await BatchAnswer.find();
 
+    const batchAnswers = await BatchAnswer.find()
+    .sort({ createdAt: -1 }) // newest batches first
+    .limit(50);              // only latest 50
+
+    
     const scoreboard = [];
 
     for (const batch of batchAnswers) {
@@ -3760,7 +3764,10 @@ router.get('/api/trivia/scoreboard', async (req, res) => {
 
 router.get('/api/faceoff/scoreboard', async (req, res) => {
   try {
-    const batchAnswers = await FaceOffAnswer.find();
+  const batchAnswers = await FaceOffAnswer.find()
+  .sort({ createdAt: -1 }) // newest batches first
+  .limit(50);              // only latest 50
+
 
     const scoreboard = [];
 
@@ -3803,7 +3810,8 @@ router.get('/api/user-batch-answers', async (req, res) => {
   try {
     const allBatches = await BatchAnswer.find({
       'userAnswers.userId': userId,
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 })
+     .limit(50);
 
     // Extract only the answers for this user in each batch
     const userBatches = allBatches.map(batch => {
@@ -3837,7 +3845,8 @@ router.get('/api/user-batch-faceoffanswers', async (req, res) => {
   try {
     const allBatches = await FaceOffAnswer.find({
       'userAnswers.userId': userId,
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 })
+    .limit(50);
 
     // Extract only the answers for this user in each batch
     const userBatches = allBatches.map(batch => {
