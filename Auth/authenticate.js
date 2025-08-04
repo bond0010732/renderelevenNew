@@ -3801,7 +3801,8 @@ router.get('/api/faceoff/scoreboard', async (req, res) => {
 
 // GET /api/user-batch-answers?userId=...
 router.get('/api/user-batch-answers', async (req, res) => {
-  const { userId } = req.query;
+  const { userId, limit } = req.query;
+   const limitValue = parseInt(limit) || 50;
 
   if (!userId) {
     return res.status(400).json({ message: 'Missing userId' });
@@ -3811,7 +3812,7 @@ router.get('/api/user-batch-answers', async (req, res) => {
     const allBatches = await BatchAnswer.find({
       'userAnswers.userId': userId,
     }).sort({ createdAt: -1 })
-     .limit(50);
+    .limit(limitValue);
 
     // Extract only the answers for this user in each batch
     const userBatches = allBatches.map(batch => {
@@ -3836,7 +3837,8 @@ router.get('/api/user-batch-answers', async (req, res) => {
 
 // GET /api/user-batch-answers?userId=...
 router.get('/api/user-batch-faceoffanswers', async (req, res) => {
-  const { userId } = req.query;
+  const { userId, limit } = req.query;
+   const limitValue = parseInt(limit) || 50;
 
   if (!userId) {
     return res.status(400).json({ message: 'Missing userId' });
@@ -3846,7 +3848,7 @@ router.get('/api/user-batch-faceoffanswers', async (req, res) => {
     const allBatches = await FaceOffAnswer.find({
       'userAnswers.userId': userId,
     }).sort({ createdAt: -1 })
-    .limit(50);
+   .limit(limitValue);
 
     // Extract only the answers for this user in each batch
     const userBatches = allBatches.map(batch => {
