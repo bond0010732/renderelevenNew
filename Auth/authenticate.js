@@ -10,6 +10,7 @@ const WalletModel = require('../models/Walletmodel');
 const AddTimeLog = require('../models/AddTimeLog');
 const TopUpModel = require('../models/TopUpModel');
 const DebitModel = require('../models/DebitModel');
+const DebitModelToo = require('../models/DebitModelToo');
 const ChatModel = require('../models/ChatModel');
 const ChatMessage = require('../models/ChatMessage');
 const BetIntent = require('../models/BetIntent');
@@ -258,7 +259,17 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
     WithdrawStatus: 'success',
     date: new Date(),
   });
+
+    const transactionToo = new DebitModelToo({
+    userId,
+    amount,
+    fullName,
+    WithdrawStatus: 'success',
+    date: new Date(),
+  });
+  
   await transaction.save();
+    await transactionToo.save();
 
   await TransOtpVerify.deleteOne({ userId, otp });
 
