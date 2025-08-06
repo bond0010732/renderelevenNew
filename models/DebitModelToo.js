@@ -19,6 +19,6 @@ const DebitsSchema = new mongoose.Schema({
     },
 });
 
-const DebitModelToo = mongoose.model('Debit', DebitsSchema);
+const DebitModelToo = mongoose.model('DebitToo', DebitsSchema);
 
 module.exports = DebitModelToo;
