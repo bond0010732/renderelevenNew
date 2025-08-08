@@ -469,7 +469,11 @@ router.post("/paystack/withdraw", async (req, res) => {
     const bank = bankResponse.data.data.find(
       (b) => b.name.toLowerCase() === bank_name.toLowerCase()
     );
-    if (!bank) return res.status(400).json({ error: "Bank not found" });
+
+    if (!bank) {
+  return res.status(400).json({ message: "Bank not found" });
+   }
+
 
     // ✅ Step 3: Create transfer recipient
     const recipientResponse = await axios.post(
@@ -507,11 +511,11 @@ router.post("/paystack/withdraw", async (req, res) => {
       message
     });
 
-    res.json({
-      success: true,
-      message: "Withdrawal successfully completed",
-      transferData: transferResponse.data.data
-    });
+  res.status(200).json({
+  success: true,
+  message: "Withdrawal successfully completed",
+  transferData: transferResponse.data.data
+});
 
   } catch (error) {
     console.error("Withdrawal error:", error.response?.data || error.message);
