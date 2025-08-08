@@ -1172,52 +1172,69 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
   try {
     let { fullName, email, password, expoPushToken, referralCode } = req.body;
 
-    if (!req.file) return res.status(400).json({ error: 'Profile image is required' });
-    if (!fullName || !email || !password) return res.status(400).json({ error: 'Missing required fields' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'Profile image is required' });
+    }
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
     email = email.trim().toLowerCase();
     fullName = fullName.trim().toLowerCase();
 
-    // Password strength check
+    // ✅ Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // ✅ Password strength check
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    /*** ✅ 1. CHECK EMAIL AND FULL NAME IN VERIFIED USERS ***/
-    const existingEmail = await OdinCircledbModel.findOne({ email });
-    if (existingEmail) {
+    /*** STEP 1: CHECK VERIFIED USERS ***/
+    const existingEmailVerified = await OdinCircledbModel.findOne({ email });
+    if (existingEmailVerified) {
       return res.status(409).json({ error: 'Email already exists' });
     }
 
-    const existingFullName = await OdinCircledbModel.findOne({
+    const existingNameVerified = await OdinCircledbModel.findOne({
       fullName: { $regex: `^${fullName}$`, $options: 'i' },
     });
-    if (existingFullName) {
+    if (existingNameVerified) {
       return res.status(409).json({ error: 'Full name already exists' });
     }
 
-    /*** ✅ 2. CHECK EMAIL AND FULL NAME IN UNVERIFIED USERS ***/
-    const existingUnverifiedEmail = await UnverifiedUser.findOne({ email });
-    if (existingUnverifiedEmail) {
-      //await UnverifiedUser.deleteOne({ email }); // Remove if they are retrying registration
+    /*** STEP 2: CHECK UNVERIFIED USERS ***/
+    const existingEmailUnverified = await UnverifiedUser.findOne({ email });
+    if (existingEmailUnverified) {
+      // Allow re-registration → delete old unverified record
+      await UnverifiedUser.deleteOne({ email });
     }
 
-    const existingUnverifiedName = await UnverifiedUser.findOne({
-      fullName: { $regex: `^${fullName}$`, $options: 'i' },
-    });
-    if (existingUnverifiedName) {
-      return res.status(409).json({ error: 'Full name already exists (unverified)' });
-    }
+    // Block if same fullName belongs to another unverified user with different email
+    // const existingNameUnverified = await UnverifiedUser.findOne({
+    //   fullName: { $regex: `^${fullName}$`, $options: 'i' },
+    //   email: { $ne: email }
+    // });
+    // if (existingNameUnverified) {
+    //   return res.status(409).json({ error: 'Full name already exists (unverified)' });
+    // }
 
-    // Referral check
+    /*** STEP 3: REFERRAL CHECK ***/
     let referredBy = null;
     if (referralCode) {
-      if (referralCode.length > 20) return res.status(400).json({ error: 'Invalid referral code format' });
+      if (referralCode.length > 20) {
+        return res.status(400).json({ error: 'Invalid referral code format' });
+      }
       referredBy = await OdinCircledbModel.findOne({ referralCode });
-      if (!referredBy) return res.status(400).json({ error: 'Invalid referral code' });
+      if (!referredBy) {
+        return res.status(400).json({ error: 'Invalid referral code' });
+      }
     }
 
-    // Upload image to Cloudinary
+    /*** STEP 4: UPLOAD IMAGE ***/
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { resource_type: 'image' },
@@ -1233,14 +1250,12 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       return res.status(500).json({ message: 'Image upload failed' });
     }
 
-    // Hash password
+    /*** STEP 5: HASH PASSWORD & CREATE OTP ***/
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Save temporary user
+    /*** STEP 6: CREATE UNVERIFIED USER ***/
     const unverifiedUser = await UnverifiedUser.create({
       fullName,
       email,
@@ -1251,10 +1266,10 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       referralCode: generateReferralCode(),
       codeUsed: referralCode || null,
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // expires in 15 mins
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000) // expires in 15 mins
     });
 
-    // Send OTP email
+    /*** STEP 7: SEND OTP ***/
     await sendOTPByEmail(unverifiedUser, otp);
 
     res.status(201).json({ message: 'OTP sent to email for verification' });
@@ -1264,6 +1279,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 router.post('/registers',upload.single('image'), registrationLimiter, async (req, res) => {
