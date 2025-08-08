@@ -14,7 +14,7 @@ const TransOtpVerificationSchema = new Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        expires: '5m' // Set an expiration time (e.g., 5 minutes)
+        expires: 300,  // Set an expiration time (e.g., 5 minutes)
     },
 });
 
