@@ -1726,37 +1726,37 @@ router.put('/updateBankDetails/:userId', async (req, res) => {
     const { userId } = req.params;
     const { bankName, accountName, accountNumber } = req.body;
 
-    console.log("Request data: ", req.body); // Log incoming request data
-
-    // Validate input
     if (!bankName || !accountName || !accountNumber) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Find the user
-    const user = await OdinCircledbModel.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // Check if account number is already taken by another user
+    const existingAccount = await BankModel.findOne({ accountNumber, userId: { $ne: userId } });
+    if (existingAccount) {
+      return res.status(400).json({ message: 'Account number already in use by another user' });
     }
 
-    // Always update the bank details in BankModel (create or update)
-    await BankModel.findOneAndUpdate(
-      { userId }, // Find by userId
-      { bankName, accountName, accountNumber }, // Update these fields
-      { upsert: true, new: true } // upsert creates a new document if it doesn't exist
+    // Update or create bank record for this user
+    const updatedBank = await BankModel.findOneAndUpdate(
+      { userId },
+      { bankName, accountName, accountNumber },
+      { upsert: true, new: true, runValidators: true }
     );
 
-    // Update the user with new bank details (optional)
-    user.bankDetails = { bankName, accountName, accountNumber }; // You can choose to update this as well
-    await user.save();
+    // Update in user model if you store it there too
+    await OdinCircledbModel.findByIdAndUpdate(
+      userId,
+      { bankDetails: { bankName, accountName, accountNumber } },
+      { new: true }
+    );
 
-    res.status(200).json({ message: 'Bank details updated successfully' });
+    res.status(200).json({ message: 'Bank details updated successfully', bank: updatedBank });
   } catch (error) {
-    console.error("Error updating bank details: ", error); // Log any errors
-    res.status(500).json({ message: 'Failed to update bank details', error });
+    console.error("Error updating bank details: ", error);
+    res.status(500).json({ message: 'Failed to update bank details', error: error.message });
   }
 });
+
 
 
 
