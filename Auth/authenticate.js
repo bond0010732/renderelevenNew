@@ -316,42 +316,42 @@ router.post('/verify-otpwithdraw', async (req, res) => {
 // };
 
 
-  await transporter.sendMail(emailOptions);
+//   await transporter.sendMail(emailOptions);
 
-  // ✅ Send Notification
-  const device = await Device.findOne({ users: { $elemMatch: { _id: userId } } });
-  if (!device) throw new Error('Device not found.');
+//   // ✅ Send Notification
+//   const device = await Device.findOne({ users: { $elemMatch: { _id: userId } } });
+//   if (!device) throw new Error('Device not found.');
 
-  if (!Expo.isExpoPushToken(device.expoPushToken)) {
-    throw new Error('Invalid Expo Push Token');
-  }
+//   if (!Expo.isExpoPushToken(device.expoPushToken)) {
+//     throw new Error('Invalid Expo Push Token');
+//   }
 
-  const notificationMessage = {
-    to: device.expoPushToken,
-    sound: 'default',
-    title: title || 'Withdrawal Notification',
-    body:  message || `Your withdrawal of NGN ${withdrawalAmount.toFixed(2)} was successful`,
-  };
+//   const notificationMessage = {
+//     to: device.expoPushToken,
+//     sound: 'default',
+//     title: title || 'Withdrawal Notification',
+//     body:  message || `Your withdrawal of NGN ${withdrawalAmount.toFixed(2)} was successful`,
+//   };
 
-  const chunks = expo.chunkPushNotifications([notificationMessage]);
-  const tickets = [];
+//   const chunks = expo.chunkPushNotifications([notificationMessage]);
+//   const tickets = [];
 
-  for (const chunk of chunks) {
-    try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
-    } catch (err) {
-      console.error('Error sending notification chunk:', err);
-      throw new Error('Notification failed to send.');
-    }
-  }
+//   for (const chunk of chunks) {
+//     try {
+//       const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+//       tickets.push(...ticketChunk);
+//     } catch (err) {
+//       console.error('Error sending notification chunk:', err);
+//       throw new Error('Notification failed to send.');
+//     }
+//   }
 
-  return {
-    message: 'Withdrawal verified, email and notification sent successfully.',
-    transactionId: transaction._id,
-    tickets,
-  };
-};
+//   return {
+//     message: 'Withdrawal verified, email and notification sent successfully.',
+//     transactionId: transaction._id,
+//     tickets,
+//   };
+// };
 
 
 // router.post("/paystack/withdraw", async (req, res) => {
