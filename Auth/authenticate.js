@@ -1080,40 +1080,142 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
 
 
 
+// router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
+//   try {
+//     let { fullName, email, password, expoPushToken,image, referralCode, unlockedCount } = req.body;
+
+//  if (!req.file) return res.status(400).json({ error: 'Profile image is required' });
+//       if (!fullName || !email || !password) return res.status(400).json({ error: 'Missing required fields' });
+
+//     email = email.trim().toLowerCase();
+//     fullName = fullName.trim().toLowerCase();
+
+//      // Password strength check
+//       if (password.length < 6) {
+//         return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+//       }
+
+//     // Check if already verified
+//     const existingVerified = await OdinCircledbModel.findOne({ email });
+//     if (existingVerified) {
+//       return res.status(400).json({ error: 'User already registered and verified' });
+//     }
+
+//     // Remove any existing unverified user with same email
+//     const existingUnverified = await UnverifiedUser.findOne({ email });
+//     if (existingUnverified) {
+//       await UnverifiedUser.deleteOne({ email });
+//     }
+
+//     // Check referral
+//       let referredBy = null;
+//       if (referralCode) {
+//         if (referralCode.length > 20) return res.status(400).json({ error: 'Invalid referral code format' });
+//         referredBy = await OdinCircledbModel.findOne({ referralCode });
+//         if (!referredBy) return res.status(400).json({ error: 'Invalid referral code' });
+//       }
+
+//     // Upload image to Cloudinary
+//     const result = await new Promise((resolve, reject) => {
+//       const stream = cloudinary.uploader.upload_stream(
+//         { resource_type: 'image' },
+//         (error, result) => {
+//           if (error) reject(error);
+//           else resolve(result);
+//         }
+//       );
+//       stream.end(req.file.buffer);
+//     });
+
+//     if (!result || !result.secure_url) {
+//       return res.status(500).json({ message: 'Image upload failed' });
+//     }
+
+//     // Generate hashed password
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
+
+//     // Generate OTP
+//     const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+//       // Create JWT
+//     //const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+
+//     console.log(otp,'jdjd')
+//     // Save temporary user (Unverified)
+//     const unverifiedUser = await UnverifiedUser.create({
+//       fullName,
+//       email,
+//       password: hashedPassword,
+//       image: result.secure_url,
+//       expoPushToken,
+//       //unlockedCount,
+//       otp,
+//       referralCode: generateReferralCode(),
+//       codeUsed: referralCode || null,       // the code they used from someone else
+//       createdAt: new Date(),
+//       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // expires in 15 mins
+//     });
+
+//     // Send OTP email
+//     await sendOTPByEmail(unverifiedUser, otp);
+
+//     res.status(201).json({ message: 'OTP sent to email for verification' });
+
+//   } catch (err) {
+//     console.error('Registration error:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+
 router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
   try {
-    let { fullName, email, password, expoPushToken,image, referralCode, unlockedCount } = req.body;
+    let { fullName, email, password, expoPushToken, referralCode } = req.body;
 
- if (!req.file) return res.status(400).json({ error: 'Profile image is required' });
-      if (!fullName || !email || !password) return res.status(400).json({ error: 'Missing required fields' });
+    if (!req.file) return res.status(400).json({ error: 'Profile image is required' });
+    if (!fullName || !email || !password) return res.status(400).json({ error: 'Missing required fields' });
 
     email = email.trim().toLowerCase();
     fullName = fullName.trim().toLowerCase();
 
-     // Password strength check
-      if (password.length < 6) {
-        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
-      }
-
-    // Check if already verified
-    const existingVerified = await OdinCircledbModel.findOne({ email });
-    if (existingVerified) {
-      return res.status(400).json({ error: 'User already registered and verified' });
+    // Password strength check
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    // Remove any existing unverified user with same email
-    const existingUnverified = await UnverifiedUser.findOne({ email });
-    if (existingUnverified) {
-      await UnverifiedUser.deleteOne({ email });
+    /*** ✅ 1. CHECK EMAIL AND FULL NAME IN VERIFIED USERS ***/
+    const existingEmail = await OdinCircledbModel.findOne({ email });
+    if (existingEmail) {
+      return res.status(409).json({ error: 'Email already exists' });
     }
 
-    // Check referral
-      let referredBy = null;
-      if (referralCode) {
-        if (referralCode.length > 20) return res.status(400).json({ error: 'Invalid referral code format' });
-        referredBy = await OdinCircledbModel.findOne({ referralCode });
-        if (!referredBy) return res.status(400).json({ error: 'Invalid referral code' });
-      }
+    const existingFullName = await OdinCircledbModel.findOne({
+      fullName: { $regex: `^${fullName}$`, $options: 'i' },
+    });
+    if (existingFullName) {
+      return res.status(409).json({ error: 'Full name already exists' });
+    }
+
+    /*** ✅ 2. CHECK EMAIL AND FULL NAME IN UNVERIFIED USERS ***/
+    const existingUnverifiedEmail = await UnverifiedUser.findOne({ email });
+    if (existingUnverifiedEmail) {
+      //await UnverifiedUser.deleteOne({ email }); // Remove if they are retrying registration
+    }
+
+    const existingUnverifiedName = await UnverifiedUser.findOne({
+      fullName: { $regex: `^${fullName}$`, $options: 'i' },
+    });
+    if (existingUnverifiedName) {
+      return res.status(409).json({ error: 'Full name already exists (unverified)' });
+    }
+
+    // Referral check
+    let referredBy = null;
+    if (referralCode) {
+      if (referralCode.length > 20) return res.status(400).json({ error: 'Invalid referral code format' });
+      referredBy = await OdinCircledbModel.findOne({ referralCode });
+      if (!referredBy) return res.status(400).json({ error: 'Invalid referral code' });
+    }
 
     // Upload image to Cloudinary
     const result = await new Promise((resolve, reject) => {
@@ -1131,28 +1233,23 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       return res.status(500).json({ message: 'Image upload failed' });
     }
 
-    // Generate hashed password
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
-      // Create JWT
-    //const token = jwt.sign({ userId: user._id }, JWT_SECRET);
-
-    console.log(otp,'jdjd')
-    // Save temporary user (Unverified)
+    // Save temporary user
     const unverifiedUser = await UnverifiedUser.create({
       fullName,
       email,
       password: hashedPassword,
       image: result.secure_url,
       expoPushToken,
-      //unlockedCount,
       otp,
       referralCode: generateReferralCode(),
-      codeUsed: referralCode || null,       // the code they used from someone else
+      codeUsed: referralCode || null,
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // expires in 15 mins
     });
@@ -1167,6 +1264,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 router.post('/registers',upload.single('image'), registrationLimiter, async (req, res) => {
   try {
