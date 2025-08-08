@@ -232,88 +232,88 @@ router.post('/verify-otpwithdraw', async (req, res) => {
 });
 
 
-const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, message, fullName }) => {
+// const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, message, fullName }) => {
 
-  const otpRecord = await TransOtpVerify.findOne({ userId, otp });
- if (!otpRecord) throw new Error('Invalid or expired OTP');
+//   const otpRecord = await TransOtpVerify.findOne({ userId, otp });
+//  if (!otpRecord) throw new Error('Invalid or expired OTP');
 
-  const user = await OdinCircledbModel.findById(userId);
-  if (!user) throw new Error('User not found');
+//   const user = await OdinCircledbModel.findById(userId);
+//   if (!user) throw new Error('User not found');
 
-  const withdrawalAmount = parseFloat(totalAmount);
-  if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
-    throw new Error('Invalid amount');
-  }
+//   const withdrawalAmount = parseFloat(totalAmount);
+//   if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
+//     throw new Error('Invalid amount');
+//   }
 
-  if (user.wallet.cashoutbalance < withdrawalAmount) {
-    throw new Error('Insufficient balance');
-  }
+//   if (user.wallet.cashoutbalance < withdrawalAmount) {
+//     throw new Error('Insufficient balance');
+//   }
 
-  user.wallet.cashoutbalance -= withdrawalAmount;
-  await user.save();
+//   user.wallet.cashoutbalance -= withdrawalAmount;
+//   await user.save();
 
-  const transaction = new DebitModel({
-    userId,
-    amount,
-    fullName,
-    WithdrawStatus: 'success',
-    date: new Date(),
-  });
+//   const transaction = new DebitModel({
+//     userId,
+//     amount,
+//     fullName,
+//     WithdrawStatus: 'success',
+//     date: new Date(),
+//   });
 
-    const transactionToo = new DebitModelToo({
-    userId,
-    amount,
-    fullName,
-    WithdrawStatus: 'success',
-    date: new Date(),
-  });
+//     const transactionToo = new DebitModelToo({
+//     userId,
+//     amount,
+//     fullName,
+//     WithdrawStatus: 'success',
+//     date: new Date(),
+//   });
   
-  await transaction.save();
-    await transactionToo.save();
+//   await transaction.save();
+//     await transactionToo.save();
 
-  await TransOtpVerify.deleteOne({ userId, otp });
+//   await TransOtpVerify.deleteOne({ userId, otp });
 
-  // ✅ Send Email
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'odincirclex@gmail.com',
-      pass: 'xyqi telz pmxd evkl', // Make sure this is an app password, not your Gmail password
-    },
-  });
+//   // ✅ Send Email
+//   const transporter = nodemailer.createTransport({
+//     service: 'gmail',
+//     auth: {
+//       user: 'odincirclex@gmail.com',
+//       pass: 'xyqi telz pmxd evkl', // Make sure this is an app password, not your Gmail password
+//     },
+//   });
 
- const emailOptions = {
-  from: 'odincirclex@gmail.com',
-  to: user.email,
-  subject: 'Withdrawal Notification',
-  html: `
-<div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; padding: 20px; max-width: 520px; margin: 0 auto; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.05);">
-  <!-- Header -->
-  <div style="background-color: #111; padding: 16px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h2 style="margin: 0; font-size: 17px; color: #fff;">Withdrawal Successful</h2>
-  </div>
+//  const emailOptions = {
+//   from: 'odincirclex@gmail.com',
+//   to: user.email,
+//   subject: 'Withdrawal Notification',
+//   html: `
+// <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; padding: 20px; max-width: 520px; margin: 0 auto; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.05);">
+//   <!-- Header -->
+//   <div style="background-color: #111; padding: 16px; border-radius: 12px 12px 0 0; text-align: center;">
+//     <h2 style="margin: 0; font-size: 17px; color: #fff;">Withdrawal Successful</h2>
+//   </div>
 
-  <!-- Body -->
-  <div style="background-color: #fff; padding: 24px; border-radius: 0 0 12px 12px; color: #222;">
-    <p style="font-size: 15px; margin: 0 0 16px;">Hi <strong>${user.fullName}</strong>,</p>
+//   <!-- Body -->
+//   <div style="background-color: #fff; padding: 24px; border-radius: 0 0 12px 12px; color: #222;">
+//     <p style="font-size: 15px; margin: 0 0 16px;">Hi <strong>${user.fullName}</strong>,</p>
 
-    <p style="font-size: 15px; text-align: center; margin-bottom: 20px;">
-      ₦<strong>${withdrawalAmount.toFixed(2)}</strong> has been sent to your account.
-    </p>
+//     <p style="font-size: 15px; text-align: center; margin-bottom: 20px;">
+//       ₦<strong>${withdrawalAmount.toFixed(2)}</strong> has been sent to your account.
+//     </p>
 
-    <div style="background-color: #f0f0f0; padding: 14px 18px; border-radius: 8px; font-size: 14px;">
-      <div><strong>ID:</strong> ${transaction._id}</div>
-      <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
-      <div><strong>Status:</strong> <span style="color:#111;">Success</span></div>
-    </div>
+//     <div style="background-color: #f0f0f0; padding: 14px 18px; border-radius: 8px; font-size: 14px;">
+//       <div><strong>ID:</strong> ${transaction._id}</div>
+//       <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
+//       <div><strong>Status:</strong> <span style="color:#111;">Success</span></div>
+//     </div>
 
-    <p style="font-size: 13px; color: #666; margin-top: 24px; text-align: center;">
-      Need help? <a href="mailto:odincirclex@gmail.com" style="color: #333; text-decoration: underline;">Contact Support</a>
-    </p>
-  </div>
-</div>
-`,
-};
+//     <p style="font-size: 13px; color: #666; margin-top: 24px; text-align: center;">
+//       Need help? <a href="mailto:odincirclex@gmail.com" style="color: #333; text-decoration: underline;">Contact Support</a>
+//     </p>
+//   </div>
+// </div>
+// `,
+// };
 
 
   await transporter.sendMail(emailOptions);
@@ -354,6 +354,93 @@ const verifyWithdrawalOtp = async ({ userId, otp, totalAmount, amount, title, me
 };
 
 
+// router.post("/paystack/withdraw", async (req, res) => {
+//   const {
+//     name,
+//     account_number,
+//     bank_name,
+//     amount,
+//     currency,
+//     otp,
+//     totalAmount,
+//     userId,
+//     title,
+//     message,
+//     fullName
+//   } = req.body;
+
+//   if (!name || !account_number || !bank_name || !amount || !userId) {
+//     return res.status(400).json({ error: "All fields are required" });
+//   }
+
+//   try {
+//     // ✅ Step 1: Verify OTP before making any Paystack request
+//     const otpVerificationResult = await verifyWithdrawalOtp({
+//       userId,
+//       otp,
+//       totalAmount,
+//       amount,
+//       title,
+//       message,
+//       fullName,
+//     });
+
+//     // ✅ Step 2: Find the bank code from Paystack
+//     const bankResponse = await axios.get(`${PAYSTACK_BASE_URL}/bank`, {
+//       headers: paystackHeaders,
+//     });
+
+//     const bank = bankResponse.data.data.find(
+//       (b) => b.name.toLowerCase() === bank_name.toLowerCase()
+//     );
+
+//     if (!bank) {
+//       return res.status(400).json({ error: "Bank not found" });
+//     }
+
+//     // ✅ Step 3: Create transfer recipient
+//     const recipientResponse = await axios.post(
+//       `${PAYSTACK_BASE_URL}/transferrecipient`,
+//       {
+//         type: "nuban",
+//         name,
+//         account_number,
+//         bank_code: bank.code,
+//         currency: currency || "NGN",
+//       },
+//       { headers: paystackHeaders }
+//     );
+
+//     const recipient_code = recipientResponse.data.data.recipient_code;
+
+//     // ✅ Step 4: Initiate transfer
+//     const transferResponse = await axios.post(
+//       `${PAYSTACK_BASE_URL}/transfer`,
+//       {
+//         source: "balance",
+//         amount: parseInt(amount) * 100, // convert to kobo
+//         recipient: recipient_code,
+//         reason: "Withdrawal",
+//       },
+//       { headers: paystackHeaders }
+//     );
+
+//     // ✅ Step 5: Respond to client
+//     res.json({
+//       success: true,
+//       message: "Withdrawal successfully completed",
+//       transferData: transferResponse.data.data,
+//       ...otpVerificationResult,
+//     });
+//   } catch (error) {
+//     console.error("Withdrawal error:", error.response?.data || error.message);
+//     res.status(500).json({
+//       error: "Withdrawal process failed",
+//       details: error.response?.data?.message || error.message,
+//     });
+//   }
+// });
+
 router.post("/paystack/withdraw", async (req, res) => {
   const {
     name,
@@ -374,29 +461,15 @@ router.post("/paystack/withdraw", async (req, res) => {
   }
 
   try {
-    // ✅ Step 1: Verify OTP before making any Paystack request
-    const otpVerificationResult = await verifyWithdrawalOtp({
-      userId,
-      otp,
-      totalAmount,
-      amount,
-      title,
-      message,
-      fullName,
-    });
+    // ✅ Step 1: OTP + Balance Check (no deduction yet)
+    await verifyWithdrawalOtpOnly({ userId, otp, totalAmount });
 
-    // ✅ Step 2: Find the bank code from Paystack
-    const bankResponse = await axios.get(`${PAYSTACK_BASE_URL}/bank`, {
-      headers: paystackHeaders,
-    });
-
+    // ✅ Step 2: Get bank code from Paystack
+    const bankResponse = await axios.get(`${PAYSTACK_BASE_URL}/bank`, { headers: paystackHeaders });
     const bank = bankResponse.data.data.find(
       (b) => b.name.toLowerCase() === bank_name.toLowerCase()
     );
-
-    if (!bank) {
-      return res.status(400).json({ error: "Bank not found" });
-    }
+    if (!bank) return res.status(400).json({ error: "Bank not found" });
 
     // ✅ Step 3: Create transfer recipient
     const recipientResponse = await axios.post(
@@ -410,7 +483,6 @@ router.post("/paystack/withdraw", async (req, res) => {
       },
       { headers: paystackHeaders }
     );
-
     const recipient_code = recipientResponse.data.data.recipient_code;
 
     // ✅ Step 4: Initiate transfer
@@ -418,20 +490,29 @@ router.post("/paystack/withdraw", async (req, res) => {
       `${PAYSTACK_BASE_URL}/transfer`,
       {
         source: "balance",
-        amount: parseInt(amount) * 100, // convert to kobo
+        amount: parseInt(amount) * 100, // kobo
         recipient: recipient_code,
         reason: "Withdrawal",
       },
       { headers: paystackHeaders }
     );
 
-    // ✅ Step 5: Respond to client
+    // ✅ Step 5: Deduct funds ONLY now
+    await finalizeWithdrawal({
+      userId,
+      totalAmount,
+      amount,
+      fullName,
+      title,
+      message
+    });
+
     res.json({
       success: true,
       message: "Withdrawal successfully completed",
-      transferData: transferResponse.data.data,
-      ...otpVerificationResult,
+      transferData: transferResponse.data.data
     });
+
   } catch (error) {
     console.error("Withdrawal error:", error.response?.data || error.message);
     res.status(500).json({
@@ -440,6 +521,127 @@ router.post("/paystack/withdraw", async (req, res) => {
     });
   }
 });
+
+async function verifyWithdrawalOtpOnly({ userId, otp, totalAmount }) {
+  const otpRecord = await TransOtpVerify.findOne({ userId, otp });
+  if (!otpRecord) throw new Error('Invalid or expired OTP');
+
+  const user = await OdinCircledbModel.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  const withdrawalAmount = parseFloat(totalAmount);
+  if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
+    throw new Error('Invalid amount');
+  }
+
+  if (user.wallet.cashoutbalance < withdrawalAmount) {
+    throw new Error('Insufficient balance');
+  }
+
+  // Delete OTP now to prevent reuse
+  await TransOtpVerify.deleteOne({ userId, otp });
+}
+
+async function finalizeWithdrawal({ userId, totalAmount, amount, fullName, title, message }) {
+  const user = await OdinCircledbModel.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  // Deduct funds
+  user.wallet.cashoutbalance -= parseFloat(totalAmount);
+  await user.save();
+
+  // Save transaction in both models
+  const transaction = new DebitModel({
+    userId,
+    amount,
+    fullName,
+    WithdrawStatus: 'success',
+    date: new Date(),
+  });
+  const transactionToo = new DebitModelToo({
+    userId,
+    amount,
+    fullName,
+    WithdrawStatus: 'success',
+    date: new Date(),
+  });
+
+  await transaction.save();
+  await transactionToo.save();
+
+  // ---- Send Email ----
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'odincirclex@gmail.com',
+      pass: 'xyqi telz pmxd evkl', // App password
+    },
+  });
+
+  const emailOptions = {
+    from: 'odincirclex@gmail.com',
+    to: user.email,
+    subject: 'Withdrawal Notification',
+    html: `
+<div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; padding: 20px; max-width: 520px; margin: 0 auto; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.05);">
+  <div style="background-color: #111; padding: 16px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h2 style="margin: 0; font-size: 17px; color: #fff;">Withdrawal Successful</h2>
+  </div>
+  <div style="background-color: #fff; padding: 24px; border-radius: 0 0 12px 12px; color: #222;">
+    <p style="font-size: 15px; margin: 0 0 16px;">Hi <strong>${user.fullName}</strong>,</p>
+    <p style="font-size: 15px; text-align: center; margin-bottom: 20px;">
+      ₦<strong>${parseFloat(totalAmount).toFixed(2)}</strong> has been sent to your account.
+    </p>
+    <div style="background-color: #f0f0f0; padding: 14px 18px; border-radius: 8px; font-size: 14px;">
+      <div><strong>ID:</strong> ${transaction._id}</div>
+      <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
+      <div><strong>Status:</strong> <span style="color:#111;">Success</span></div>
+    </div>
+    <p style="font-size: 13px; color: #666; margin-top: 24px; text-align: center;">
+      Need help? <a href="mailto:odincirclex@gmail.com" style="color: #333; text-decoration: underline;">Contact Support</a>
+    </p>
+  </div>
+</div>
+`,
+  };
+
+  await transporter.sendMail(emailOptions);
+
+  // ---- Send Push Notification ----
+  const device = await Device.findOne({ users: { $elemMatch: { _id: userId } } });
+  if (!device) throw new Error('Device not found.');
+
+  if (!Expo.isExpoPushToken(device.expoPushToken)) {
+    throw new Error('Invalid Expo Push Token');
+  }
+
+  const notificationMessage = {
+    to: device.expoPushToken,
+    sound: 'default',
+    title: title || 'Withdrawal Notification',
+    body: message || `Your withdrawal of NGN ${parseFloat(totalAmount).toFixed(2)} was successful`,
+  };
+
+  const chunks = expo.chunkPushNotifications([notificationMessage]);
+  const tickets = [];
+
+  for (const chunk of chunks) {
+    try {
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      tickets.push(...ticketChunk);
+    } catch (err) {
+      console.error('Error sending notification chunk:', err);
+      throw new Error('Notification failed to send.');
+    }
+  }
+
+  return {
+    message: 'Withdrawal finalized, email and notification sent successfully.',
+    transactionId: transaction._id,
+    tickets,
+  };
+}
+
 
    router.get('/verify-bankName', async (req, res) => {
   const { accountNumber, bankCode } = req.query;
