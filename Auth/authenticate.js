@@ -94,6 +94,37 @@ const paystackHeaders = {
   "Content-Type": "application/json",
 };
 
+// router.post('/api/wallet/deduct', async (req, res) => {
+//   const { userId, amount } = req.body;
+
+//   if (!userId || !amount) {
+//     return res.status(400).json({ error: 'Missing userId or amount' });
+//   }
+
+//   try {
+//     const user = await OdinCircledbModel.findById(userId);
+//     if (!user || !user.wallet) {
+//       return res.status(404).json({ error: 'User not found or wallet missing' });
+//     }
+
+//     if (user.wallet.balance < amount) {
+//       return res.status(400).json({ error: 'Insufficient balance' });
+//     }
+
+//     user.wallet.balance -= amount;
+//     await user.save();
+
+//     res.json({
+//       success: true,
+//       message: `₦${amount} deducted successfully`,
+//       newBalance: user.wallet.balance,
+//     });
+//   } catch (err) {
+//     console.error('💥 Error deducting balance:', err);
+//     res.status(500).json({ error: 'Server error while deducting balance' });
+//   }
+// });
+
 router.post('/api/wallet/deduct', async (req, res) => {
   const { userId, amount } = req.body;
 
@@ -107,21 +138,31 @@ router.post('/api/wallet/deduct', async (req, res) => {
       return res.status(404).json({ error: 'User not found or wallet missing' });
     }
 
-    if (user.wallet.balance < amount) {
+    const deductionAmount = parseFloat(amount);
+    if (isNaN(deductionAmount) || deductionAmount <= 0) {
+      return res.status(400).json({ error: 'Invalid deduction amount' });
+    }
+
+    if (user.wallet.balance < deductionAmount) {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
-    user.wallet.balance -= amount;
+    // Deduct balance
+    user.wallet.balance -= deductionAmount;
     await user.save();
+
+    // Save usage log
+    await new AddTimeLog({ userId, cost: deductionAmount }).save();
 
     res.json({
       success: true,
-      message: `₦${amount} deducted successfully`,
+      message: `₦${deductionAmount} deducted successfully`,
       newBalance: user.wallet.balance,
     });
-  } catch (err) {
-    console.error('💥 Error deducting balance:', err);
-    res.status(500).json({ error: 'Server error while deducting balance' });
+
+  } catch (error) {
+    console.error('Error deducting from wallet:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
