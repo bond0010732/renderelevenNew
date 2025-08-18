@@ -1605,6 +1605,51 @@ router.get('/referral/summary/:userId', async (req, res) => {
   }
 });
 
+// GET /referrals/summary/all
+router.get('/referrals/summary/all', async (req, res) => {
+  try {
+    // Aggregate referrals by referringUserId
+    const summary = await ReferralModel.aggregate([
+      {
+        $group: {
+          _id: '$referringUserId',
+          totalReferrals: { $sum: 1 },
+          activatedCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'Paid'] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'odincircledbmodels',       // check your actual collection name
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 0,
+          fullName: '$user.fullName',
+          email: '$user.email',
+          referralCode: '$user.referralCode',
+          totalReferrals: 1,
+          activatedCount: 1,
+          payout: { $multiply: ['$activatedCount', 500] } // reward per referral
+        }
+      },
+      { $sort: { totalReferrals: -1 } },  // top referrers first
+      { $limit: 20 }                       // top 20
+    ]);
+
+    res.status(200).json({ summary });
+  } catch (error) {
+    console.error('Error fetching global referral summary:', error);
+    res.status(500).json({ error: 'Failed to fetch global referral summary' });
+  }
+});
+
 
 router.post('/check-user', async (req, res) => {
   try {
