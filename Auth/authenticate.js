@@ -1647,7 +1647,7 @@ router.post('/check-user', async (req, res) => {
 
 
 
-router.get('/referral/:userId',verifyToken, async (req, res) => {
+router.get('/referral/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
