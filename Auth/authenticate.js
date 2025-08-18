@@ -1622,7 +1622,7 @@ router.get('/referrals/summary/all', async (req, res) => {
       },
       {
         $lookup: {
-          from: 'odincircledbmodels', // your collection name
+          from: 'odincircledbnames', // your collection name
           localField: '_id',
           foreignField: '_id',
           as: 'user'
