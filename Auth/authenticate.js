@@ -1786,6 +1786,49 @@ router.get('/api/unreadCount/:userId', async (req, res) => {
 // });
 
 router.get('/api/usersVisibleTo/:userId', async (req, res) => {
+  const { page = 1, limit = 10, firstLetter, query } = req.query;
+
+  try {
+    // confirm requester exists
+    const requestingUser = await OdinCircledbModel.findById(req.params.userId).select('_id');
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found' });
+    }
+
+    const pageInt = parseInt(page);
+    const limitInt = parseInt(limit);
+
+    // Base filter: exclude requesting user
+    const filter = { _id: { $ne: req.params.userId } };
+
+    // Alphabet search
+    if (firstLetter) {
+      filter.fullName = { $regex: `^${firstLetter}`, $options: 'i' };
+    }
+
+    // Typed search (overrides or combines with firstLetter)
+    if (query) {
+      filter.fullName = { $regex: query, $options: 'i' };
+    }
+
+    const users = await OdinCircledbModel.find(filter)
+      .select('fullName email image')
+      .skip((pageInt - 1) * limitInt)
+      .limit(limitInt)
+      .sort({ fullName: 1 });
+
+    const totalCount = await OdinCircledbModel.countDocuments(filter);
+    const hasMore = pageInt * limitInt < totalCount;
+
+    res.json({ items: users, hasMore });
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+router.get('/apis/usersVisibleTo/:userId', async (req, res) => {
   const { page = 1, limit = 10, firstLetter } = req.query;
 
   try {
