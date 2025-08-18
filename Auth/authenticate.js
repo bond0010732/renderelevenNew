@@ -1606,13 +1606,14 @@ router.get('/referral/summary/:userId', async (req, res) => {
 });
 
 // GET /referrals/summary/all
+
+// GET /referrals/summary/all
 router.get('/referrals/summary/all', async (req, res) => {
   try {
-    // Aggregate referrals by referringUserId
     const summary = await ReferralModel.aggregate([
       {
         $group: {
-          _id: '$referringUserId',
+          _id: '$referringUserId', // group by referring user
           totalReferrals: { $sum: 1 },
           activatedCount: {
             $sum: { $cond: [{ $eq: ['$status', 'Paid'] }, 1, 0] }
@@ -1621,7 +1622,7 @@ router.get('/referrals/summary/all', async (req, res) => {
       },
       {
         $lookup: {
-          from: 'odincircledbmodels',       // check your actual collection name
+          from: 'odincircledbmodels', // your collection name
           localField: '_id',
           foreignField: '_id',
           as: 'user'
@@ -1639,8 +1640,7 @@ router.get('/referrals/summary/all', async (req, res) => {
           payout: { $multiply: ['$activatedCount', 500] } // reward per referral
         }
       },
-      { $sort: { totalReferrals: -1 } },  // top referrers first
-      { $limit: 20 }                       // top 20
+      { $sort: { totalReferrals: -1 } }, // top referrers first
     ]);
 
     res.status(200).json({ summary });
