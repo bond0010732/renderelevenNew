@@ -1717,7 +1717,7 @@ router.get('/referral/:userId', async (req, res) => {
   }
 });
 
-router.get('/getBankDetails/:userId',verifyToken, async (req, res) => {
+router.get('/getBankDetails/:userId', async (req, res) => {
   try {
       const { userId } = req.params;
       const bankDetails = await BankModel.findOne({ userId });
