@@ -1805,31 +1805,6 @@ router.get('/api/unreadCount/:userId', async (req, res) => {
 });
 
 
-// router.get('/api/unreadCount/:userId', async (req, res) => {
-//   const { userId } = req.params;
-
-//   try {
-//     const unreadMessages = await ChatMessage.find({
-//       receiverId: userId,
-//       status: 'sent'  // Not 'delivered' or 'read'
-//     });
-
-//     // Group and count by senderId
-//     const unreadMap = {};
-
-//     unreadMessages.forEach(msg => {
-//       const senderId = msg.senderId.toString();
-//       unreadMap[senderId] = (unreadMap[senderId] || 0) + 1;
-//     });
-
-//     console.log('📬 UnreadMap for', userId, unreadMap);
-//     res.json(unreadMap);
-//   } catch (err) {
-//     console.error('❌ Error fetching unread messages:', err);
-//     res.status(500).json({ error: 'Server error fetching unread count' });
-//   }
-// });
-
 router.get('/api/usersVisibleTo/:userId', async (req, res) => {
   const { page = 1, limit = 10, firstLetter, query } = req.query;
 
