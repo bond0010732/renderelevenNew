@@ -1222,7 +1222,7 @@ if (isNaN(limit) || limit < 1) limit = 10;
     const normalizeAddCashout = (arr) =>
       arr.map((item) => ({
         _id: item._id,
-        type: item.credit,
+        type: item.type,
         amount: item.amount,
         cost: item.cost,
         date: item.createdAt,
