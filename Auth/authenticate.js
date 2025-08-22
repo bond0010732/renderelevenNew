@@ -8,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
 const OdinCircledbModel = require('../models/odincircledb');
 const WalletModel = require('../models/Walletmodel');
 const AddTimeLog = require('../models/AddTimeLog');
+const AddFeature = require('../models/AddFeature');
 const TopUpModel = require('../models/TopUpModel');
 const DebitModel = require('../models/DebitModel');
 const DebitModelToo = require('../models/DebitModelToo');
@@ -153,6 +154,12 @@ router.post('/api/wallet/deduct', async (req, res) => {
 
     // Save usage log with type
     await AddTimeLog.create({
+      userId,
+      cost: deductionAmount,
+      type: type || "other" // 👈 default fallback
+    });
+
+     await AddFeature.create({
       userId,
       cost: deductionAmount,
       type: type || "other" // 👈 default fallback
