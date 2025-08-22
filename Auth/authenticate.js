@@ -1140,11 +1140,12 @@ router.get("/transactions/:userId", async (req, res) => {
         date: item.createdAt,
       }));
 
-    const allTx = [
-      ...formatTx(topupRes, "Topup"),
+     const allTx = [
+      ...formatTx(topups, "Topup"),   // ✅ fixed
       ...formatTx(cashouts, "Cashout"),
       ...formatTx(wins, "Won"),
     ];
+
 
     // sort newest first
     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
