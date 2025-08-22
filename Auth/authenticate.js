@@ -3866,7 +3866,7 @@ router.post('/removeUserFromBatch', async (req, res) => {
 
 
 router.post('/addTime', async (req, res) => {
-  const { userId, cost } = req.body;
+  const { userId, cost, type } = req.body;
 
   try {
     const user = await OdinCircledbModel.findById(userId);
@@ -3889,8 +3889,12 @@ router.post('/addTime', async (req, res) => {
     user.wallet.balance = userBalance - timeCost;
     await user.save();
 
-    // Save usage log
-    await new AddTimeLog({ userId, cost: timeCost }).save();
+    // Save usage log with type
+    await AddTimeLog.create({
+      userId,
+      cost: timeCost,
+      type: type || "other"   // 👈 fallback
+    });
 
     return res.status(200).json({
       message: 'Time added and balance deducted',
@@ -3901,6 +3905,7 @@ router.post('/addTime', async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 router.post('/placeBet',verifyToken, async (req, res) => {
   const { batchId, userId, betAmount } = req.body; // Expect batchId, userId, and betAmount
@@ -4601,7 +4606,7 @@ if (!batch) {
 await BetModelQuiz.create({
   userId: user._id,
   batchId: batch._id,
-  type: "bet",
+  type: "triviaBet",
   amount: userBet,
   balanceAfter: user.wallet.balance,
 });
