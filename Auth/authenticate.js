@@ -1141,15 +1141,26 @@ router.get("/transactions/:userId", async (req, res) => {
     page = page ? parseInt(page, 10) : 1;
     limit = limit ? parseInt(limit, 10) : 10;
 
+    console.log("📥 Incoming request:", { userId, page, limit });
+
     // fetch all in parallel
     const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
       DebitModel.find({ userId }).sort({ createdAt: -1 }),
-      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), // ✅ X/O bets
-      BetModelQuiz.find({ userId }).sort({ createdAt: -1 }), // ✅ Trivia bets
-      AddTimeLog.find({ userId }).sort({ createdAt: -1 }), // ✅ Chat features
+      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), 
+      BetModelQuiz.find({ userId }).sort({ createdAt: -1 }), 
+      AddTimeLog.find({ userId }).sort({ createdAt: -1 }), 
       CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
     ]);
+
+    console.log("📊 Raw counts:", {
+      topups: topups.length,
+      cashouts: cashouts.length,
+      wins: wins.length,
+      triviaBets: triviaBets.length,
+      logs: logs.length,
+      addcashout: addcashout.length,
+    });
 
     // normalize each
     const normalizeTopup = (arr) =>
@@ -1195,7 +1206,7 @@ router.get("/transactions/:userId", async (req, res) => {
     const normalizeLogs = (arr) =>
       arr.map((item) => ({
         _id: item._id,
-        type: item.type, // unlock_access, image, video, giphy
+        type: item.type, 
         amount: item.amount,
         cost: item.cost,
         date: item.createdAt,
@@ -1222,6 +1233,8 @@ router.get("/transactions/:userId", async (req, res) => {
       ...normalizeAddCashout(addcashout),
     ];
 
+    console.log("📦 Combined transactions before sort:", allTx.length);
+
     // sort newest first
     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -1231,6 +1244,12 @@ router.get("/transactions/:userId", async (req, res) => {
     // paginate
     const startIndex = (page - 1) * limit;
     const paginatedTx = allTx.slice(startIndex, startIndex + limit);
+
+    console.log("📑 Pagination:", {
+      startIndex,
+      endIndex: startIndex + limit,
+      returned: paginatedTx.length,
+    });
 
     res.json({
       page,
