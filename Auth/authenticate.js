@@ -1119,6 +1119,42 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
   }
 });
 
+// ✅ GET all transactions (topup, cashout, winnings) for a user
+router.get("/transactions/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // fetch all 3 in parallel
+    const [topups, cashouts, wins] = await Promise.all([
+      TopUpModel.find({ userId }).sort({ createdAt: -1 }),
+      DebitModel.find({ userId }).sort({ createdAt: -1 }),
+      WinnerModel.find({ userId }).sort({ createdAt: -1 }),
+    ]);
+
+    // normalize structure
+    const formatTx = (arr, type) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type,              // "Topup", "Cashout", "Won"
+        amount: item.amount,
+        date: item.createdAt,
+      }));
+
+    const allTx = [
+      ...formatTx(topupRes, "Topup"),
+      ...formatTx(cashouts, "Cashout"),
+      ...formatTx(wins, "Won"),
+    ];
+
+    // sort newest first
+    allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json(allTx);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
 
 
 // router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
@@ -3194,7 +3230,7 @@ router.post('/user/remove',verifyToken, async (req, res) => {
 
 
 // GET /transactions?page=1&limit=10
-router.get('/transactions',verifyToken, async (req, res) => {
+router.get('/transactions', async (req, res) => {
   const { userId } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 3;
