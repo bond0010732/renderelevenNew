@@ -1128,31 +1128,52 @@ router.get("/transactions/:userId", async (req, res) => {
     const [topups, cashouts, wins] = await Promise.all([
       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
       DebitModel.find({ userId }).sort({ createdAt: -1 }),
-      WinnerModel.find({ userId }).sort({ createdAt: -1 }),
+      WinnerModel.find({ winnerName: userId }).sort({ createdAt: -1 }), // ✅ winnerName is userId in your schema
     ]);
 
     // normalize structure
-    const formatTx = (arr, type) =>
+    const normalizeTopup = (arr) =>
       arr.map((item) => ({
         _id: item._id,
-        type,              // "Topup", "Cashout", "Won"
+        type: "Topup",
         amount: item.amount,
+        ref: item.txRef,
+        transactionId: item.transactionId,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    const normalizeCashout = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: "Cashout",
+        amount: item.amount,
+        status: item.WithdrawStatus,
         date: item.createdAt,
       }));
 
-     const allTx = [
-      ...formatTx(topups, "Topup"),   // ✅ fixed
-      ...formatTx(cashouts, "Cashout"),
-      ...formatTx(wins, "Won"),
-    ];
+    const normalizeWins = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: "Won",
+        amount: item.totalBet,
+        roomId: item.roomId,
+        date: item.createdAt,
+        status: "success",
+      }));
 
+    const allTx = [
+      ...normalizeTopup(topups),
+      ...normalizeCashout(cashouts),
+      ...normalizeWins(wins),
+    ];
 
     // sort newest first
     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json(allTx);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error fetching transactions:", err);
     res.status(500).json({ error: "Failed to fetch transactions" });
   }
 });
