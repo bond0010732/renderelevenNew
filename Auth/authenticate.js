@@ -1134,14 +1134,16 @@ router.get("/transactions/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // fetch all 3 in parallel
-    const [topups, cashouts, wins] = await Promise.all([
+    // fetch all in parallel
+    const [topups, cashouts, wins, triviaBets, logs] = await Promise.all([
       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
       DebitModel.find({ userId }).sort({ createdAt: -1 }),
-      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), // ✅ winnerName is userId in your schema
+      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), // ✅ X/O bets
+      BetModelQuiz.find({ userId }).sort({ createdAt: -1 }), // ✅ Trivia bets
+      AddTimeLog.find({ userId }).sort({ createdAt: -1 }), // ✅ Chat features
     ]);
 
-    // normalize structure
+    // normalize each
     const normalizeTopup = (arr) =>
       arr.map((item) => ({
         _id: item._id,
@@ -1172,10 +1174,32 @@ router.get("/transactions/:userId", async (req, res) => {
         status: "success",
       }));
 
+    const normalizeTriviaBets = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: "triviaBet",
+        amount: item.amount,
+        roomId: item.roomId,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    const normalizeLogs = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: item.type, // unlock_access, image, video, giphy
+        amount: item.amount,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    // combine everything
     const allTx = [
       ...normalizeTopup(topups),
       ...normalizeCashout(cashouts),
       ...normalizeWins(wins),
+      ...normalizeTriviaBets(triviaBets),
+      ...normalizeLogs(logs),
     ];
 
     // sort newest first
