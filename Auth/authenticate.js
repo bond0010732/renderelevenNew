@@ -1135,6 +1135,11 @@ router.get("/transactions/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
+        let { page = 1, limit = 10 } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+
     // fetch all in parallel
     const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
