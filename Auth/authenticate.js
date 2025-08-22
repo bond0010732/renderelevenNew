@@ -1223,9 +1223,24 @@ router.get("/transactions/:userId", async (req, res) => {
     ];
 
     // sort newest first
+   // sort newest first
     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    res.json(allTx);
+    // total count
+    const total = allTx.length;
+
+    // paginate
+    const startIndex = (page - 1) * limit;
+    const paginatedTx = allTx.slice(startIndex, startIndex + limit);
+
+    res.json({
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      data: paginatedTx,
+    });
+
   } catch (err) {
     console.error("❌ Error fetching transactions:", err);
     res.status(500).json({ error: "Failed to fetch transactions" });
