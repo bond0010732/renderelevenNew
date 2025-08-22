@@ -1189,6 +1189,7 @@ router.get("/transactions/:userId", async (req, res) => {
         _id: item._id,
         type: item.type, // unlock_access, image, video, giphy
         amount: item.amount,
+        cost: item.cost,
         date: item.createdAt,
         status: "success",
       }));
