@@ -1135,11 +1135,20 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
 router.get("/transactions/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+  
     let { page, limit } = req.query;
 
-    // ensure numbers
-    page = page ? parseInt(page, 10) : 1;
-    limit = limit ? parseInt(limit, 10) : 10;
+// parse safely
+page = parseInt(page, 10);
+limit = parseInt(limit, 10);
+
+if (isNaN(page) || page < 1) page = 1;
+if (isNaN(limit) || limit < 1) limit = 10;
+
+// paginate
+const startIndex = (page - 1) * limit;
+const paginatedTx = allTx.slice(startIndex, startIndex + limit);
+
 
     console.log("📥 Incoming request:", { userId, page, limit });
 
