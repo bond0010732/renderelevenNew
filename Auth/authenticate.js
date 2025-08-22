@@ -1251,8 +1251,6 @@ const paginatedTx = allTx.slice(startIndex, startIndex + limit);
     const total = allTx.length;
 
 
-    const paginatedTx = allTx.slice(startIndex, startIndex + limit);
-
     // console.log("📑 Pagination:", {
     //   startIndex,
     //   endIndex: startIndex + limit,
