@@ -1131,14 +1131,15 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
 });
 
 // ✅ GET all transactions (topup, cashout, winnings) for a user
+// ✅ GET all transactions (topup, cashout, winnings) for a user
 router.get("/transactions/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+    let { page, limit } = req.query;
 
-        let { page = 1, limit = 10 } = req.query;
-
-    page = parseInt(page);
-    limit = parseInt(limit);
+    // ensure numbers
+    page = page ? parseInt(page, 10) : 1;
+    limit = limit ? parseInt(limit, 10) : 10;
 
     // fetch all in parallel
     const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
@@ -1201,11 +1202,10 @@ router.get("/transactions/:userId", async (req, res) => {
         status: "success",
       }));
 
-    
     const normalizeAddCashout = (arr) =>
       arr.map((item) => ({
         _id: item._id,
-        type: item.credit, // unlock_access, image, video, giphy
+        type: item.credit,
         amount: item.amount,
         cost: item.cost,
         date: item.createdAt,
@@ -1223,7 +1223,6 @@ router.get("/transactions/:userId", async (req, res) => {
     ];
 
     // sort newest first
-   // sort newest first
     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // total count
@@ -1240,12 +1239,12 @@ router.get("/transactions/:userId", async (req, res) => {
       totalPages: Math.ceil(total / limit),
       data: paginatedTx,
     });
-
   } catch (err) {
     console.error("❌ Error fetching transactions:", err);
     res.status(500).json({ error: "Failed to fetch transactions" });
   }
 });
+
 
 
 // router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
