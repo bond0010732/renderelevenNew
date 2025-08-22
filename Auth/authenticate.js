@@ -9,6 +9,7 @@ const OdinCircledbModel = require('../models/odincircledb');
 const WalletModel = require('../models/Walletmodel');
 const AddTimeLog = require('../models/AddTimeLog');
 const AddFeature = require('../models/AddFeature');
+const CashoutHistory = require('../models/CashoutHistory');
 const TopUpModel = require('../models/TopUpModel');
 const DebitModel = require('../models/DebitModel');
 const DebitModelToo = require('../models/DebitModelToo');
@@ -1135,12 +1136,13 @@ router.get("/transactions/:userId", async (req, res) => {
     const { userId } = req.params;
 
     // fetch all in parallel
-    const [topups, cashouts, wins, triviaBets, logs] = await Promise.all([
+    const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
       DebitModel.find({ userId }).sort({ createdAt: -1 }),
       BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), // ✅ X/O bets
       BetModelQuiz.find({ userId }).sort({ createdAt: -1 }), // ✅ Trivia bets
       AddTimeLog.find({ userId }).sort({ createdAt: -1 }), // ✅ Chat features
+      CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
     ]);
 
     // normalize each
@@ -1194,6 +1196,17 @@ router.get("/transactions/:userId", async (req, res) => {
         status: "success",
       }));
 
+    
+    const normalizeCashout = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: item.credit, // unlock_access, image, video, giphy
+        amount: item.amount,
+        cost: item.cost,
+        date: item.createdAt,
+        status: "success",
+      }));
+
     // combine everything
     const allTx = [
       ...normalizeTopup(topups),
@@ -1201,6 +1214,7 @@ router.get("/transactions/:userId", async (req, res) => {
       ...normalizeWins(wins),
       ...normalizeTriviaBets(triviaBets),
       ...normalizeLogs(logs),
+      ...normalizeCashout(addcashout),
     ];
 
     // sort newest first
