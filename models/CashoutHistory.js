@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
 const CashoutHistorySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "OdinCircledbModel", required: true },
@@ -7,4 +7,5 @@ const CashoutHistorySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-export default mongoose.model("CashoutHistory", CashoutHistorySchema);
+
+module.exports = mongoose.model('CashoutHistory', CashoutHistorySchema);
