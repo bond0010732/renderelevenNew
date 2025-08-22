@@ -1,21 +1,12 @@
 const mongoose = require('mongoose');
 
 const BetQuizSchema = new mongoose.Schema({
-    roomId: {
-        type: String,
-    },
-    playerName: {
-        type: String,
-        required: true,
-    },
-    betAmount: {
-        type: Number,
-        required: true,
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
+   userId: { type: mongoose.Schema.Types.ObjectId, ref: "OdinCircledbModel", required: true },
+  batchId: { type: mongoose.Schema.Types.ObjectId, ref: "BatchModel", required: true },
+  type: { type: String, enum: ["bet", "win", "loss", "withdraw", "deposit"], required: true },
+  amount: { type: Number, required: true },
+  balanceAfter: { type: Number, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 
 const BetModelQuiz = mongoose.model('BetQuiz', BetQuizSchema);
