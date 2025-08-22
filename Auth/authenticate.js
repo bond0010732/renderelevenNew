@@ -4596,7 +4596,17 @@ if (!batch) {
 
       user.wallet.balance -= userBet;
       await user.save();
+
+      // 👇 Save transaction history
+await BetModelQuiz.create({
+  userId: user._id,
+  batchId: batch._id,
+  type: "bet",
+  amount: userBet,
+  balanceAfter: user.wallet.balance,
+});
       console.log(`💾 Saved user ${user._id} new balance: ${user.wallet.balance}`);
+      console.log(`📝 Transaction recorded for user ${user._id}`);
 
       batch.betsAmountPlayer.push({
         userId: intent.userId,
