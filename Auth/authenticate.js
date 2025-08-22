@@ -1150,7 +1150,7 @@ const startIndex = (page - 1) * limit;
 const paginatedTx = allTx.slice(startIndex, startIndex + limit);
 
 
-    console.log("📥 Incoming request:", { userId, page, limit });
+    //console.log("📥 Incoming request:", { userId, page, limit });
 
     // fetch all in parallel
     const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
@@ -1162,14 +1162,14 @@ const paginatedTx = allTx.slice(startIndex, startIndex + limit);
       CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
     ]);
 
-    console.log("📊 Raw counts:", {
-      topups: topups.length,
-      cashouts: cashouts.length,
-      wins: wins.length,
-      triviaBets: triviaBets.length,
-      logs: logs.length,
-      addcashout: addcashout.length,
-    });
+    // console.log("📊 Raw counts:", {
+    //   topups: topups.length,
+    //   cashouts: cashouts.length,
+    //   wins: wins.length,
+    //   triviaBets: triviaBets.length,
+    //   logs: logs.length,
+    //   addcashout: addcashout.length,
+    // });
 
     // normalize each
     const normalizeTopup = (arr) =>
@@ -1242,7 +1242,7 @@ const paginatedTx = allTx.slice(startIndex, startIndex + limit);
       ...normalizeAddCashout(addcashout),
     ];
 
-    console.log("📦 Combined transactions before sort:", allTx.length);
+    //console.log("📦 Combined transactions before sort:", allTx.length);
 
     // sort newest first
     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1250,15 +1250,14 @@ const paginatedTx = allTx.slice(startIndex, startIndex + limit);
     // total count
     const total = allTx.length;
 
-    // paginate
-    const startIndex = (page - 1) * limit;
+
     const paginatedTx = allTx.slice(startIndex, startIndex + limit);
 
-    console.log("📑 Pagination:", {
-      startIndex,
-      endIndex: startIndex + limit,
-      returned: paginatedTx.length,
-    });
+    // console.log("📑 Pagination:", {
+    //   startIndex,
+    //   endIndex: startIndex + limit,
+    //   returned: paginatedTx.length,
+    // });
 
     res.json({
       page,
