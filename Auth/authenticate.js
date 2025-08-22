@@ -1197,7 +1197,7 @@ router.get("/transactions/:userId", async (req, res) => {
       }));
 
     
-    const normalizeCashout = (arr) =>
+    const normalizeAddCashout = (arr) =>
       arr.map((item) => ({
         _id: item._id,
         type: item.credit, // unlock_access, image, video, giphy
@@ -1214,7 +1214,7 @@ router.get("/transactions/:userId", async (req, res) => {
       ...normalizeWins(wins),
       ...normalizeTriviaBets(triviaBets),
       ...normalizeLogs(logs),
-      ...normalizeCashout(addcashout),
+      ...normalizeAddCashout(addcashout),
     ];
 
     // sort newest first
