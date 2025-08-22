@@ -126,7 +126,7 @@ const paystackHeaders = {
 // });
 
 router.post('/api/wallet/deduct', async (req, res) => {
-  const { userId, amount } = req.body;
+  const { userId, amount, type } = req.body; // 👈 include type
 
   if (!userId || !amount) {
     return res.status(400).json({ error: 'Missing userId or amount' });
@@ -151,8 +151,12 @@ router.post('/api/wallet/deduct', async (req, res) => {
     user.wallet.balance -= deductionAmount;
     await user.save();
 
-    // Save usage log
-    await new AddTimeLog({ userId, cost: deductionAmount }).save();
+    // Save usage log with type
+    await AddTimeLog.create({
+      userId,
+      cost: deductionAmount,
+      type: type || "other" // 👈 default fallback
+    });
 
     res.json({
       success: true,
@@ -165,7 +169,6 @@ router.post('/api/wallet/deduct', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 
 // GET /userwinner/:userId?page=1&limit=10
