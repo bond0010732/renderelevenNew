@@ -1138,7 +1138,7 @@ router.get("/transactions/:userId", async (req, res) => {
     const [topups, cashouts, wins] = await Promise.all([
       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
       DebitModel.find({ userId }).sort({ createdAt: -1 }),
-      WinnerModel.find({ winnerName: userId }).sort({ createdAt: -1 }), // ✅ winnerName is userId in your schema
+      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), // ✅ winnerName is userId in your schema
     ]);
 
     // normalize structure
@@ -1165,7 +1165,7 @@ router.get("/transactions/:userId", async (req, res) => {
     const normalizeWins = (arr) =>
       arr.map((item) => ({
         _id: item._id,
-        type: "Won",
+        type: "bet",
         amount: item.totalBet,
         roomId: item.roomId,
         date: item.createdAt,
