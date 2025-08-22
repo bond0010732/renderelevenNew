@@ -4360,7 +4360,7 @@ router.get('/api/trivia/scoreboard', async (req, res) => {
 
     const batchAnswers = await BatchAnswer.find()
     .sort({ createdAt: -1 }) // newest batches first
-    .limit(50);              // only latest 50
+    .limit(20);              // only latest 50
 
     
     const scoreboard = [];
@@ -4398,7 +4398,7 @@ router.get('/api/faceoff/scoreboard', async (req, res) => {
   try {
   const batchAnswers = await FaceOffAnswer.find()
   .sort({ createdAt: -1 }) // newest batches first
-  .limit(50);              // only latest 50
+  .limit(20);              // only latest 50
 
 
     const scoreboard = [];
@@ -4434,7 +4434,7 @@ router.get('/api/faceoff/scoreboard', async (req, res) => {
 // GET /api/user-batch-answers?userId=...
 router.get('/api/user-batch-answers', async (req, res) => {
   const { userId, limit } = req.query;
-   const limitValue = parseInt(limit) || 50;
+   const limitValue = parseInt(limit) || 20;
 
   if (!userId) {
     return res.status(400).json({ message: 'Missing userId' });
@@ -4470,7 +4470,7 @@ router.get('/api/user-batch-answers', async (req, res) => {
 // GET /api/user-batch-answers?userId=...
 router.get('/api/user-batch-faceoffanswers', async (req, res) => {
   const { userId, limit } = req.query;
-   const limitValue = parseInt(limit) || 50;
+   const limitValue = parseInt(limit) || 20;
 
   if (!userId) {
     return res.status(400).json({ message: 'Missing userId' });
