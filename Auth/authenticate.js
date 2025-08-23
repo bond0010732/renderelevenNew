@@ -4347,12 +4347,6 @@ router.put('/faceoffbatches/:id', async (req, res) => {
   
 
 
-
-
-
-
-
-
 router.get('/api/trivia/scoreboard', async (req, res) => {
   try {
 
@@ -4380,6 +4374,7 @@ router.get('/api/trivia/scoreboard', async (req, res) => {
       scoreboard.push({
         batchId: batch._id,
         batchName: batch.batchName,
+        createdAt: batch.createdAt, // ✅ include timestamp
         users: usersWithScores.sort((a, b) => b.correctAnswers - a.correctAnswers), // optional sort
       });
     }
@@ -4418,6 +4413,7 @@ router.get('/api/faceoff/scoreboard', async (req, res) => {
       scoreboard.push({
         batchId: batch._id,
         batchName: batch.batchName,
+        createdAt: batch.createdAt, // ✅ include timestamp
         users: usersWithScores.sort((a, b) => b.correctAnswers - a.correctAnswers), // optional sort
       });
     }
