@@ -34,6 +34,12 @@ const BatchSchema = new mongoose.Schema({
     default: 0,
   },
   isProcessing: { type: Boolean, default: false },
+   // 👇 Add this
+  status: {
+    type: String,
+    enum: ["waiting", "started", "finished"], // clear lifecycle
+    default: "waiting",
+  },
   joinedUsers: [
     {
       userId: { type: String },
