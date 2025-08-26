@@ -671,12 +671,18 @@ async function finalizeWithdrawal({ userId, totalAmount, amount, fullName, title
     throw new Error('Invalid Expo Push Token');
   }
 
-  const notificationMessage = {
-    to: device.expoPushToken,
-    sound: 'default',
-    title: title || 'Withdrawal Notification',
-    body: message || `Your withdrawal of NGN ${parseFloat(totalAmount).toFixed(2)} was successful`,
-  };
+ const notificationMessage = {
+  to: device.expoPushToken,
+  sound: 'default',
+  title: title || 'Withdrawal Notification',
+  body: message || `Your withdrawal of NGN ${parseFloat(totalAmount).toFixed(2)} was successful`,
+  data: {
+    screen: 'Wallet',  // 👈 add screen name here
+    amount: totalAmount,
+    type: 'withdrawal',
+  },
+};
+
 
   const chunks = expo.chunkPushNotifications([notificationMessage]);
   const tickets = [];
@@ -940,6 +946,11 @@ router.post("/paystack/verify", async (req, res) => {
                 to: referrer.expoPushToken,
                 title: "Referral Bonus 🎉",
                 body: `💸 Referral bonus unlocked! ₦${bonusAmount} has been added to your wallet.`,
+                 data: {
+                    screen: "Wallet",   // 👈 navigate here on tap
+                    type: "referralBonus",
+                    amount: bonusAmount,
+               },
               },
             ]);
           }
@@ -1172,7 +1183,7 @@ if (isNaN(limit) || limit < 1) limit = 10;
     const normalizeTopup = (arr) =>
       arr.map((item) => ({
         _id: item._id,
-        type: "Topup",
+        type: item.type,
         amount: item.amount,
         ref: item.txRef,
         transactionId: item.transactionId,
