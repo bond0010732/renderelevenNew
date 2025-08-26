@@ -4577,164 +4577,283 @@ if (!Array.isArray(answers)) {
 
 
 
-router.post('/intentToBet', async (req, res) => {
+// router.post('/intentToBet', async (req, res) => {
+//   const { batchId, userId, betAmount } = req.body;
+//   console.log('📥 /intentToBet called with:', req.body);
+
+//   try {
+//     const batchObjectId = new mongoose.Types.ObjectId(batchId);
+//     const userObjectId = new mongoose.Types.ObjectId(userId);
+    
+//     const batch = await BatchModel.findById(batchObjectId);
+//     if (!batch) {
+//       console.log('❌ Batch not found');
+//       return res.status(404).json({ message: 'Batch not found' });
+//     }
+//     console.log('✅ Batch found:', batch._id);
+
+//     if (batch.roomLocked) {
+//       console.log('🔒 Room is locked');
+//       return res.status(400).json({ message: 'Room is already full or locked' });
+//     }
+
+//     const existingIntent = await BetIntent.findOne({ batchId: batchObjectId, userId: userObjectId });
+//     if (existingIntent) {
+//       console.log('🔁 User already joined:', userObjectId);
+//       return res.json({ message: 'User already joined' });
+//     }
+
+//     const intent = new BetIntent({
+//       batchId: batchObjectId,
+//       userId: userObjectId,
+//       betAmount
+//     });
+//     await intent.save();
+//     console.log('✅ Bet intent saved:', intent);
+
+//     const totalIntents = await BetIntent.countDocuments({ batchId: batchObjectId });
+//     console.log('📊 Total intents for batch:', totalIntents);
+
+//     if (totalIntents >= batch.NumberPlayers) {
+//       batch.roomLocked = true;
+//       await batch.save();
+//       console.log('🔐 Room locked');
+//     }
+
+//     res.json({ message: 'Intent registered' });
+//   } catch (err) {
+//     console.error('❌ Error in /intentToBet:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+router.post("/intentToBet", async (req, res) => {
   const { batchId, userId, betAmount } = req.body;
-  console.log('📥 /intentToBet called with:', req.body);
 
   try {
     const batchObjectId = new mongoose.Types.ObjectId(batchId);
     const userObjectId = new mongoose.Types.ObjectId(userId);
-    
+
     const batch = await BatchModel.findById(batchObjectId);
-    if (!batch) {
-      console.log('❌ Batch not found');
-      return res.status(404).json({ message: 'Batch not found' });
-    }
-    console.log('✅ Batch found:', batch._id);
+    if (!batch) return res.status(404).json({ message: "Batch not found" });
 
     if (batch.roomLocked) {
-      console.log('🔒 Room is locked');
-      return res.status(400).json({ message: 'Room is already full or locked' });
+      return res.status(400).json({ message: "Room is already full or locked" });
     }
 
-    const existingIntent = await BetIntent.findOne({ batchId: batchObjectId, userId: userObjectId });
+    // Prevent duplicate intents
+    const existingIntent = await BetIntent.findOne({
+      batchId: batchObjectId,
+      userId: userObjectId,
+    });
     if (existingIntent) {
-      console.log('🔁 User already joined:', userObjectId);
-      return res.json({ message: 'User already joined' });
+      return res.json({ message: "User already joined" });
     }
 
+    // Save intent
     const intent = new BetIntent({
       batchId: batchObjectId,
       userId: userObjectId,
-      betAmount
+      betAmount,
     });
     await intent.save();
-    console.log('✅ Bet intent saved:', intent);
 
     const totalIntents = await BetIntent.countDocuments({ batchId: batchObjectId });
-    console.log('📊 Total intents for batch:', totalIntents);
 
     if (totalIntents >= batch.NumberPlayers) {
-      batch.roomLocked = true;
-      await batch.save();
-      console.log('🔐 Room locked');
+      // ✅ Room is full → lock + deduct bets automatically
+      console.log(`🔐 Room full for batch ${batch._id}, starting deduction...`);
+      try {
+        const updatedBatch = await deductBetsForRoom(batch._id);
+        return res.json({
+          message: "Room full, bets deducted, game started",
+          batch: updatedBatch,
+        });
+      } catch (deductErr) {
+        console.error("❌ Deduction failed:", deductErr);
+        return res.status(500).json({ message: "Deduction failed" });
+      }
     }
 
-    res.json({ message: 'Intent registered' });
+    res.json({ message: "Intent registered, waiting for more players" });
   } catch (err) {
-    console.error('❌ Error in /intentToBet:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ Error in /intentToBet:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
+async function deductBetsForRoom(batchId) {
+  const batchObjectId = new mongoose.Types.ObjectId(batchId);
 
+  const batch = await BatchModel.findOneAndUpdate(
+    { _id: batchObjectId, isProcessing: { $ne: true } },
+    { isProcessing: true },
+    { new: true }
+  );
 
-// 2. When room is full – d
-router.post('/deductBetsForRoom', async (req, res) => {
-  const { batchId } = req.body;
-  console.log('🔁 /deductBetsForRoom hit with:', req.body);
+  if (!batch) throw new Error("Batch already being processed or not found");
 
-  try {
-    const batchObjectId = new mongoose.Types.ObjectId(batchId); // 👈 Convert to ObjectId
+  const intents = await BetIntent.find({ batchId: batchObjectId });
 
-    //const batch = await BatchModel.findById(batchObjectId);
-    const batch = await BatchModel.findOneAndUpdate(
-  { _id: batchObjectId, isProcessing: { $ne: true } }, // Only proceed if not already processing
-  { isProcessing: true }, // Set lock
-  { new: true }
-);
+  if (intents.length < batch.NumberPlayers) {
+    throw new Error("Room is not full yet");
+  }
 
-if (!batch) {
-  console.log('⚠️ Batch is already being processed');
-  return res.status(409).json({ message: 'Batch is already being processed' });
+  // Deduct balances
+  for (const intent of intents) {
+    const alreadyDeducted = batch.betsAmountPlayer.some(
+      (b) => String(b.userId) === String(intent.userId)
+    );
+    if (alreadyDeducted) continue;
+
+    const user = await OdinCircledbModel.findById(intent.userId);
+    if (!user) throw new Error(`User ${intent.userId} not found`);
+
+    const userBalance = parseFloat(user.wallet.balance);
+    const userBet = parseFloat(intent.betAmount);
+    const requiredBet = parseFloat(batch.betAmount);
+
+    if (isNaN(userBet) || userBet !== requiredBet) {
+      throw new Error(`Invalid bet for user ${intent.userId}`);
+    }
+
+    if (userBalance < userBet) {
+      throw new Error(`Insufficient balance for user ${user._id}`);
+    }
+
+    // Deduct
+    user.wallet.balance -= userBet;
+    await user.save();
+
+    // Record transaction
+    await BetModelQuiz.create({
+      userId: user._id,
+      batchId: batch._id,
+      type: "triviaBet",
+      amount: userBet,
+      balanceAfter: user.wallet.balance,
+    });
+
+    batch.betsAmountPlayer.push({
+      userId: intent.userId,
+      betsAmount: userBet,
+    });
+  }
+
+  batch.isProcessing = false;
+  batch.status = "started";
+  batch.roomLocked = true;
+  await batch.save();
+
+  console.log(`🏁 Batch ${batch._id} updated: started and locked`);
+  return batch;
 }
 
+// 2. When room is full – d
+// router.post('/deductBetsForRoom', async (req, res) => {
+//   const { batchId } = req.body;
+//   console.log('🔁 /deductBetsForRoom hit with:', req.body);
+
+//   try {
+//     const batchObjectId = new mongoose.Types.ObjectId(batchId); // 👈 Convert to ObjectId
+
+//     //const batch = await BatchModel.findById(batchObjectId);
+//     const batch = await BatchModel.findOneAndUpdate(
+//   { _id: batchObjectId, isProcessing: { $ne: true } }, // Only proceed if not already processing
+//   { isProcessing: true }, // Set lock
+//   { new: true }
+// );
+
+// if (!batch) {
+//   console.log('⚠️ Batch is already being processed');
+//   return res.status(409).json({ message: 'Batch is already being processed' });
+// }
+
     
-    if (!batch) {
-      console.log('❌ Batch not found');
-      return res.status(404).json({ message: 'Batch not found' });
-    }
-    console.log('✅ Batch found:', batch._id);
+//     if (!batch) {
+//       console.log('❌ Batch not found');
+//       return res.status(404).json({ message: 'Batch not found' });
+//     }
+//     console.log('✅ Batch found:', batch._id);
 
-    const intents = await BetIntent.find({ batchId: batchObjectId }); // 👈 Use ObjectId
-    console.log('🎯 Found bet intents:', intents.length);
+//     const intents = await BetIntent.find({ batchId: batchObjectId }); // 👈 Use ObjectId
+//     console.log('🎯 Found bet intents:', intents.length);
 
-    if (intents.length < batch.NumberPlayers) {
-      console.log('⏳ Room not full yet');
-      return res.status(400).json({ message: 'Room is not full yet' });
-    }
+//     if (intents.length < batch.NumberPlayers) {
+//       console.log('⏳ Room not full yet');
+//       return res.status(400).json({ message: 'Room is not full yet' });
+//     }
 
-    // Validate users and their balance
-    for (const intent of intents) {
-      console.log(`🔍 Validating user ${intent.userId}`);
+//     // Validate users and their balance
+//     for (const intent of intents) {
+//       console.log(`🔍 Validating user ${intent.userId}`);
 
-      const user = await OdinCircledbModel.findById(intent.userId);
-      if (!user) {
-        console.log(`❌ User ${intent.userId} not found`);
-        return res.status(404).json({ message: `User ${intent.userId} not found` });
-      }
+//       const user = await OdinCircledbModel.findById(intent.userId);
+//       if (!user) {
+//         console.log(`❌ User ${intent.userId} not found`);
+//         return res.status(404).json({ message: `User ${intent.userId} not found` });
+//       }
 
-      const userBalance = parseFloat(user.wallet.balance);
-      const requiredBet = parseFloat(batch.betAmount);
-      const userBet = parseFloat(intent.betAmount);
+//       const userBalance = parseFloat(user.wallet.balance);
+//       const requiredBet = parseFloat(batch.betAmount);
+//       const userBet = parseFloat(intent.betAmount);
 
-      if (isNaN(userBet) || userBet !== requiredBet) {
-        console.log(`❌ Invalid bet amount for user ${intent.userId}: ${userBet}`);
-        return res.status(400).json({ message: `Invalid bet for user ${intent.userId}` });
-      }
+//       if (isNaN(userBet) || userBet !== requiredBet) {
+//         console.log(`❌ Invalid bet amount for user ${intent.userId}: ${userBet}`);
+//         return res.status(400).json({ message: `Invalid bet for user ${intent.userId}` });
+//       }
 
 
-    }
+//     }
 
-    // Deduct balances and update batch
-    for (const intent of intents) {
-      const alreadyDeducted = batch.betsAmountPlayer.some(
-        (b) => String(b.userId) === String(intent.userId)
-      );
-      if (alreadyDeducted) {
-        console.log(`↪️ Already deducted for user ${intent.userId}, skipping...`);
-        continue;
-      }
+//     // Deduct balances and update batch
+//     for (const intent of intents) {
+//       const alreadyDeducted = batch.betsAmountPlayer.some(
+//         (b) => String(b.userId) === String(intent.userId)
+//       );
+//       if (alreadyDeducted) {
+//         console.log(`↪️ Already deducted for user ${intent.userId}, skipping...`);
+//         continue;
+//       }
 
-      const user = await OdinCircledbModel.findById(intent.userId);
-      const userBet = parseFloat(intent.betAmount);
-      console.log(`💸 Deducting ${userBet} from user ${user._id}`);
+//       const user = await OdinCircledbModel.findById(intent.userId);
+//       const userBet = parseFloat(intent.betAmount);
+//       console.log(`💸 Deducting ${userBet} from user ${user._id}`);
 
-      user.wallet.balance -= userBet;
-      await user.save();
+//       user.wallet.balance -= userBet;
+//       await user.save();
 
-      // 👇 Save transaction history
-await BetModelQuiz.create({
-  userId: user._id,
-  batchId: batch._id,
-  type: "triviaBet",
-  amount: userBet,
-  balanceAfter: user.wallet.balance,
-});
-      console.log(`💾 Saved user ${user._id} new balance: ${user.wallet.balance}`);
-      console.log(`📝 Transaction recorded for user ${user._id}`);
+//       // 👇 Save transaction history
+// await BetModelQuiz.create({
+//   userId: user._id,
+//   batchId: batch._id,
+//   type: "triviaBet",
+//   amount: userBet,
+//   balanceAfter: user.wallet.balance,
+// });
+//       console.log(`💾 Saved user ${user._id} new balance: ${user.wallet.balance}`);
+//       console.log(`📝 Transaction recorded for user ${user._id}`);
 
-      batch.betsAmountPlayer.push({
-        userId: intent.userId,
-        betsAmount: userBet,
-      });
-    }
+//       batch.betsAmountPlayer.push({
+//         userId: intent.userId,
+//         betsAmount: userBet,
+//       });
+//     }
 
-    batch.isProcessing = false;
-    batch.status = 'started';
-    batch.roomLocked = true;
-    await batch.save();
-    console.log('🏁 Batch updated: started and locked');
+//     batch.isProcessing = false;
+//     batch.status = 'started';
+//     batch.roomLocked = true;
+//     await batch.save();
+//     console.log('🏁 Batch updated: started and locked');
 
-    return res.json({ message: 'Bets deducted, game ready to start' });
+//     return res.json({ message: 'Bets deducted, game ready to start' });
 
-  } catch (error) {
-    console.error('❌ Deduct error:', error);
-    // Reset the lock if something fails
-   await BatchModel.findByIdAndUpdate(batchId, { isProcessing: false });
-    return res.status(500).json({ message: 'Server error during bet deduction' });
-  }
-});
+//   } catch (error) {
+//     console.error('❌ Deduct error:', error);
+//     // Reset the lock if something fails
+//    await BatchModel.findByIdAndUpdate(batchId, { isProcessing: false });
+//     return res.status(500).json({ message: 'Server error during bet deduction' });
+//   }
+// });
 
 
 module.exports = router;
