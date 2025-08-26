@@ -1143,20 +1143,155 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
 
 // ✅ GET all transactions (topup, cashout, winnings) for a user
 // ✅ GET all transactions (topup, cashout, winnings) for a user
+// router.get("/transactions/:userId", async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+  
+//     let { page, limit } = req.query;
+
+// // parse safely
+// page = parseInt(page, 10);
+// limit = parseInt(limit, 10);
+
+// if (isNaN(page) || page < 1) page = 1;
+// if (isNaN(limit) || limit < 1) limit = 10;
+
+
+
+//     console.log("📥 Incoming request:", { userId, page, limit });
+
+//     // fetch all in parallel
+//     const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
+//       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
+//       DebitModel.find({ userId }).sort({ createdAt: -1 }),
+//       BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), 
+//       BetModelQuiz.find({ userId }).sort({ createdAt: -1 }), 
+//       AddTimeLog.find({ userId }).sort({ createdAt: -1 }), 
+//       CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
+//     ]);
+
+//     console.log("📊 Raw counts:", {
+//       topups: topups.length,
+//       cashouts: cashouts.length,
+//       wins: wins.length,
+//       triviaBets: triviaBets.length,
+//       logs: logs.length,
+//       addcashout: addcashout.length,
+//     });
+
+//     // normalize each
+//     const normalizeTopup = (arr) =>
+//       arr.map((item) => ({
+//         _id: item._id,
+//         type: item.type,
+//         amount: item.amount,
+//         ref: item.txRef,
+//         transactionId: item.transactionId,
+//         date: item.createdAt,
+//         status: "success",
+//       }));
+
+//     const normalizeCashout = (arr) =>
+//       arr.map((item) => ({
+//         _id: item._id,
+//         type: "Cashout",
+//         amount: item.amount,
+//         status: item.WithdrawStatus,
+//         date: item.createdAt,
+//       }));
+
+//     const normalizeWins = (arr) =>
+//       arr.map((item) => ({
+//         _id: item._id,
+//         type: "bet",
+//         amount: item.totalBet,
+//         roomId: item.roomId,
+//         date: item.createdAt,
+//         status: "success",
+//       }));
+
+//     const normalizeTriviaBets = (arr) =>
+//       arr.map((item) => ({
+//         _id: item._id,
+//         type: "triviaBet",
+//         amount: item.amount,
+//         roomId: item.roomId,
+//         date: item.createdAt,
+//         status: "success",
+//       }));
+
+//     const normalizeLogs = (arr) =>
+//       arr.map((item) => ({
+//         _id: item._id,
+//         type: item.type, 
+//         amount: item.amount,
+//         cost: item.cost,
+//         date: item.createdAt,
+//         status: "success",
+//       }));
+
+//     const normalizeAddCashout = (arr) =>
+//       arr.map((item) => ({
+//         _id: item._id,
+//         type: item.type,
+//         amount: item.amount,
+//         cost: item.cost,
+//         date: item.createdAt,
+//         status: "success",
+//       }));
+
+//     // combine everything
+//     const allTx = [
+//       ...normalizeTopup(topups),
+//       ...normalizeCashout(cashouts),
+//       ...normalizeWins(wins),
+//       ...normalizeTriviaBets(triviaBets),
+//       ...normalizeLogs(logs),
+//       ...normalizeAddCashout(addcashout),
+//     ];
+
+//     console.log("📦 Combined transactions before sort:", allTx.length);
+
+//     // sort newest first
+//     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+//     // total count
+//     const total = allTx.length;
+
+//     // paginate
+// const startIndex = (page - 1) * limit;
+// const paginatedTx = allTx.slice(startIndex, startIndex + limit);
+
+
+//     console.log("📑 Pagination:", {
+//       startIndex,
+//       endIndex: startIndex + limit,
+//       returned: paginatedTx.length,
+//     });
+
+//     res.json({
+//       page,
+//       limit,
+//       total,
+//       totalPages: Math.ceil(total / limit),
+//       data: paginatedTx,
+//     });
+//   } catch (err) {
+//     console.error("❌ Error fetching transactions:", err);
+//     res.status(500).json({ error: "Failed to fetch transactions" });
+//   }
+// });
+
 router.get("/transactions/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-  
     let { page, limit } = req.query;
 
-// parse safely
-page = parseInt(page, 10);
-limit = parseInt(limit, 10);
-
-if (isNaN(page) || page < 1) page = 1;
-if (isNaN(limit) || limit < 1) limit = 10;
-
-
+    // parse safely
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
 
     console.log("📥 Incoming request:", { userId, page, limit });
 
@@ -1164,9 +1299,9 @@ if (isNaN(limit) || limit < 1) limit = 10;
     const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
       TopUpModel.find({ userId }).sort({ createdAt: -1 }),
       DebitModel.find({ userId }).sort({ createdAt: -1 }),
-      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), 
-      BetModelQuiz.find({ userId }).sort({ createdAt: -1 }), 
-      AddTimeLog.find({ userId }).sort({ createdAt: -1 }), 
+      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }),
+      BetModelQuiz.find({ userId }).sort({ createdAt: -1 }),
+      AddTimeLog.find({ userId }).sort({ createdAt: -1 }),
       CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
     ]);
 
@@ -1179,7 +1314,7 @@ if (isNaN(limit) || limit < 1) limit = 10;
       addcashout: addcashout.length,
     });
 
-    // normalize each
+    // normalization helpers
     const normalizeTopup = (arr) =>
       arr.map((item) => ({
         _id: item._id,
@@ -1223,7 +1358,7 @@ if (isNaN(limit) || limit < 1) limit = 10;
     const normalizeLogs = (arr) =>
       arr.map((item) => ({
         _id: item._id,
-        type: item.type, 
+        type: item.type,
         amount: item.amount,
         cost: item.cost,
         date: item.createdAt,
@@ -1251,22 +1386,34 @@ if (isNaN(limit) || limit < 1) limit = 10;
     ];
 
     console.log("📦 Combined transactions before sort:", allTx.length);
+    allTx.slice(0, 5).forEach((tx, i) => {
+      console.log(`🔎 Before sort [${i}]:`, tx.type, tx.date);
+    });
 
     // sort newest first
     allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    console.log("✅ After sort (first 5):");
+    allTx.slice(0, 5).forEach((tx, i) => {
+      console.log(`   [${i}]`, tx.type, tx.date);
+    });
 
     // total count
     const total = allTx.length;
 
     // paginate
-const startIndex = (page - 1) * limit;
-const paginatedTx = allTx.slice(startIndex, startIndex + limit);
-
+    const startIndex = (page - 1) * limit;
+    const paginatedTx = allTx.slice(startIndex, startIndex + limit);
 
     console.log("📑 Pagination:", {
       startIndex,
       endIndex: startIndex + limit,
       returned: paginatedTx.length,
+    });
+
+    console.log("📝 Paginated sample:");
+    paginatedTx.forEach((tx, i) => {
+      console.log(`   Pg[${i}]`, tx.type, tx.date);
     });
 
     res.json({
