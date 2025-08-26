@@ -3930,7 +3930,16 @@ router.get('/checkRoomStatus/:batchId', async (req, res) => {
       return res.status(404).json({ message: 'Batch not found' });
     }
 
+    let status = "waiting"; // default
+
+    if (batch.isProcessing || batch.status === "started") {
+      status = "started";
+    } else if (!batch.roomLocked && batch.PlayersInRoom < batch.NumberPlayers) {
+      status = "waiting";
+    }
+
     res.json({
+      status,
       roomLocked: batch.roomLocked,
       playersInRoom: batch.PlayersInRoom,
       numberPlayers: batch.NumberPlayers
