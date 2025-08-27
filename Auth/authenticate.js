@@ -4622,6 +4622,12 @@ router.post('/addTime', async (req, res) => {
       type: type || "other"   // 👈 fallback
     });
 
+      await AddFeature.create({
+      userId,
+      cost: timeCost,
+      type: type || "other"   // 👈 fallback
+    });
+
     return res.status(200).json({
       message: 'Time added and balance deducted',
       newBalance: user.wallet.balance
