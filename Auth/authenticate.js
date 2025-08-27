@@ -1402,7 +1402,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
 // });
 
 
-router.get("/transactions/:userId", async (req, res) => {
+router.get("/transactionss/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     let { page, limit } = req.query;
@@ -1523,9 +1523,17 @@ router.get("/transactions/:userId", async (req, res) => {
     });
 
     // sort newest first
-    allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
+  // sort newest first (prefer unlockedAt > timestamp > createdAt)
+allTx.sort((a, b) => {
+  const getTime = (item) =>
+    new Date(item.unlockedAt || item.timestamp || item.createdAt);
+
+  return getTime(b) - getTime(a);
+});
+
 
     console.log("✅ After sort (first 5):");
+    
     allTx.slice(0, 5).forEach((tx, i) => {
       console.log(`   [${i}]`, tx.type, tx.date);
     });
