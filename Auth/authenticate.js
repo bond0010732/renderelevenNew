@@ -1290,6 +1290,126 @@ router.get("/transactions/:userId", async (req, res) => {
     // parse safely
     page = parseInt(page, 10);
     limit = parseInt(limit, 10);
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+
+    // fetch all in parallel
+    const [topups, cashouts, wins, triviaBets, logs, addcashout] = await Promise.all([
+      TopUpModel.find({ userId }).sort({ createdAt: -1 }),
+      DebitModel.find({ userId }).sort({ createdAt: -1 }),
+      BetModel.find({ winnerName: userId }).sort({ createdAt: -1 }), 
+      BetModelQuiz.find({ userId }).sort({ createdAt: -1 }), 
+      AddTimeLog.find({ userId }).sort({ createdAt: -1 }), 
+      CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
+    ]);
+
+    // normalize each
+    const normalizeTopup = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: item.type,
+        amount: item.amount,
+        ref: item.txRef,
+        transactionId: item.transactionId,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    const normalizeCashout = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: "Cashout",
+        amount: item.amount,
+        status: item.WithdrawStatus,
+        date: item.createdAt,
+      }));
+
+    const normalizeWins = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: "bet",
+        amount: item.totalBet,
+        roomId: item.roomId,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    const normalizeTriviaBets = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: "triviaBet",
+        amount: item.amount,
+        roomId: item.roomId,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    const normalizeLogs = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: item.type, 
+        amount: item.amount,
+        cost: item.cost,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    const normalizeAddCashout = (arr) =>
+      arr.map((item) => ({
+        _id: item._id,
+        type: item.type,
+        amount: item.amount,
+        cost: item.cost,
+        date: item.createdAt,
+        status: "success",
+      }));
+
+    // combine everything
+    const allTx = [
+      ...normalizeTopup(topups),
+      ...normalizeCashout(cashouts),
+      ...normalizeWins(wins),
+      ...normalizeTriviaBets(triviaBets),
+      ...normalizeLogs(logs),
+      ...normalizeAddCashout(addcashout),
+    ];
+
+    // sort newest first
+    allTx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // total count
+    const total = allTx.length;
+
+    // paginate
+    const startIndex = (page - 1) * limit;
+    const paginatedTx = allTx.slice(startIndex, startIndex + limit);
+
+    // ✅ cleaner logging
+    console.log(`📊 Tx Summary: total=${total}, page=${page}, returned=${paginatedTx.length}`);
+
+    res.json({
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      data: paginatedTx,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching transactions:", err.message);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+
+
+router.get("/transactionss/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    let { page, limit } = req.query;
+
+    // parse safely
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
     if (isNaN(page) || page < 1) page = 1;
     if (isNaN(limit) || limit < 1) limit = 10;
 
