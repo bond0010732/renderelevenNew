@@ -64,17 +64,6 @@ const storage = multer.memoryStorage(); // Use memory storage
 const upload = multer({ storage });
 
 
-const storageFile = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // unique filename
-  }
-});
-
-const uploaded = multer({ storageFile });
-
 // Configure Cloudinary properly
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,  // Correct syntax
