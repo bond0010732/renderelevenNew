@@ -2018,9 +2018,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
   try {
     let { fullName, email, password, expoPushToken, referralCode } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'Profile image is required' });
-    }
+    
     if (!fullName || !email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
