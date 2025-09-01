@@ -3386,39 +3386,39 @@ async function ResendOTPByEmail(user, newOTP) {
 }
 
 // Update user's profile image
-router.put('/updateUserProfileImage/:userId', upload.single('image'),verifyToken, async (req, res) => {
-  try {
-    const userId = req.params.userId;
+// router.put('/updateUserProfileImage/:userId', upload.single('image'),verifyToken, async (req, res) => {
+//   try {
+//     const userId = req.params.userId;
 
-    const user = await OdinCircledbModel.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+//     const user = await OdinCircledbModel.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
 
-    // Upload the image to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: 'image' },
-        (error, result) => {
-          if (error) {
-            reject({ message: 'Image upload failed', error });
-          } else {
-            resolve(result);
-          }
-        }
-      );
-      stream.end(req.file.buffer);
-    });
+//     // Upload the image to Cloudinary
+//     const result = await new Promise((resolve, reject) => {
+//       const stream = cloudinary.uploader.upload_stream(
+//         { resource_type: 'image' },
+//         (error, result) => {
+//           if (error) {
+//             reject({ message: 'Image upload failed', error });
+//           } else {
+//             resolve(result);
+//           }
+//         }
+//       );
+//       stream.end(req.file.buffer);
+//     });
 
-    // Update the user's image URL in the database
-    user.image = result.secure_url; // Save the secure URL to the database
-    await user.save();
+//     // Update the user's image URL in the database
+//     user.image = result.secure_url; // Save the secure URL to the database
+//     await user.save();
 
-    res.status(200).json({ message: 'Profile image updated successfully', imageUrl: user.image });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
+//     res.status(200).json({ message: 'Profile image updated successfully', imageUrl: user.image });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// });
 
 // Get user profile by userId
 router.get('/getUserProfile/:userId', async (req, res) => {
