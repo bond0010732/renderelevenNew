@@ -2079,20 +2079,20 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
     }
 
     /*** STEP 4: UPLOAD IMAGE ***/
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: 'image' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
+    // const result = await new Promise((resolve, reject) => {
+    //   const stream = cloudinary.uploader.upload_stream(
+    //     { resource_type: 'image' },
+    //     (error, result) => {
+    //       if (error) reject(error);
+    //       else resolve(result);
+    //     }
+    //   );
+    //   stream.end(req.file.buffer);
+    // });
 
-    if (!result || !result.secure_url) {
-      return res.status(500).json({ message: 'Image upload failed' });
-    }
+    // if (!result || !result.secure_url) {
+    //   return res.status(500).json({ message: 'Image upload failed' });
+    // }
 
     /*** STEP 5: HASH PASSWORD & CREATE OTP ***/
     const salt = await bcrypt.genSalt(10);
