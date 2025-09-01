@@ -22,7 +22,6 @@ const UnverifiedUserSchema = new mongoose.Schema({
 
   image: {
     type: String, // Cloudinary image URL
-    required: true,
   },
 
   otp: {
