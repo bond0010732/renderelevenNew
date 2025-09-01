@@ -3445,9 +3445,9 @@ router.get('/getUserProfile/:userId', async (req, res) => {
 
 // PUT /updateUserProfile/:userId
 // PUT /updateUserProfileImage/:userId
+// PUT /updateUserProfile/:userId
 router.put(
-  "/updateUserProfileImage/:userId",
-  verifyToken,
+  "/updateUserProfile/:userId",
   upload.single("image"),
   async (req, res) => {
     try {
@@ -3458,43 +3458,43 @@ router.put(
         return res.status(404).json({ message: "User not found" });
       }
 
-      if (!req.file) {
-        return res.status(400).json({ message: "No image file uploaded" });
+      // ✅ Update fullName if provided
+      if (req.body.fullName) {
+        user.fullName = req.body.fullName.trim();
       }
 
-      // Upload the image to Cloudinary
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: "user_profiles", // optional: store in folder
-            resource_type: "image",
-          },
-          (error, result) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(result);
+      // ✅ If image is uploaded, push to Cloudinary
+      if (req.file) {
+        const result = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            {
+              folder: "user_profiles",
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
             }
-          }
-        );
-        stream.end(req.file.buffer);
-      });
+          );
+          stream.end(req.file.buffer);
+        });
 
-      // Save Cloudinary URL in DB
-      user.image = result.secure_url;
+        user.image = result.secure_url;
+      }
+
       await user.save();
 
       res.status(200).json({
-        message: "Profile image updated successfully",
+        message: "Profile updated successfully",
+        fullName: user.fullName,
         imageUrl: user.image,
       });
     } catch (error) {
-      res
-        .status(500)
-        .json({ message: "Server error", error: error.message });
+      res.status(500).json({ message: "Server error", error: error.message });
     }
   }
 );
+
 
 // router.put('/updateUserProfile/:userId', async (req, res) => {
 //   try {
