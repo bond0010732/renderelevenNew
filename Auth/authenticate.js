@@ -63,6 +63,17 @@ const { ObjectId } = require('mongoose').Types;
 const storage = multer.memoryStorage(); // Use memory storage
 const upload = multer({ storage });
 
+
+const storageFile = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // unique filename
+  }
+});
+
+const upload = multer({ storageFile });
 // Configure Cloudinary properly
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,  // Correct syntax
@@ -3432,27 +3443,52 @@ router.get('/getUserProfile/:userId', async (req, res) => {
 });
 
 // PUT /updateUserProfile/:userId
-router.put('/updateUserProfile/:userId', async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const { fullName, image } = req.body;
+router.put("/updateUserProfile/:userId",upload.single("image"),
+  async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const { fullName } = req.body;
 
-    const user = await OdinCircledbModel.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      const user = await OdinCircledbModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (fullName) user.fullName = fullName.trim().toLowerCase();
+
+      if (req.file) {
+        user.image = `/uploads/${req.file.filename}`; // save relative path
+      }
+
+      await user.save();
+
+      res.status(200).json({ message: "Profile updated successfully", user });
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error: error.message });
     }
-
-    // Update fields if provided
-    if (fullName) user.fullName = fullName.trim().toLowerCase();
-    if (image) user.image = image; // should be a URL or Base64 depending on your client logic
-
-    await user.save();
-
-    res.status(200).json({ message: 'Profile updated successfully', user });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
   }
-});
+);
+// router.put('/updateUserProfile/:userId', async (req, res) => {
+//   try {
+//     const userId = req.params.userId;
+//     const { fullName, image } = req.body;
+
+//     const user = await OdinCircledbModel.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     // Update fields if provided
+//     if (fullName) user.fullName = fullName.trim().toLowerCase();
+//     if (image) user.image = image; // should be a URL or Base64 depending on your client logic
+
+//     await user.save();
+
+//     res.status(200).json({ message: 'Profile updated successfully', user });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// });
 
 
 
