@@ -7,6 +7,7 @@ const verifyToken = require('../k6/verifyToken'); // path may vary
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
 const OdinCircledbModel = require('../models/odincircledb');
 const WalletModel = require('../models/Walletmodel');
+const ToggleModel = require('../models/ToggleModel');
 const AddTimeLog = require('../models/AddTimeLog');
 const AddFeature = require('../models/AddFeature');
 const CashoutHistory = require('../models/CashoutHistory');
@@ -126,6 +127,35 @@ const paystackHeaders = {
 //     res.status(500).json({ error: 'Server error while deducting balance' });
 //   }
 // });
+
+// Get toggle state
+router.get("/toggle/:key", async (req, res) => {
+  try {
+    const toggle = await ToggleModel.findOne({ key: req.params.key });
+    if (!toggle) {
+      return res.json({ value: false }); // default if not found
+    }
+    res.json({ value: toggle.value });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Update toggle state
+router.post("/toggle/:key", async (req, res) => {
+  try {
+    const { value } = req.body; // expects { value: true/false }
+    const toggle = await ToggleModel.findOneAndUpdate(
+      { key: req.params.key },
+      { value },
+      { new: true, upsert: true }
+    );
+    res.json(toggle);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 
 router.post('/api/wallet/deduct', async (req, res) => {
   const { userId, amount, type } = req.body; // 👈 include type
