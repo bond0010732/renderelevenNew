@@ -3444,31 +3444,58 @@ router.get('/getUserProfile/:userId', async (req, res) => {
 });
 
 // PUT /updateUserProfile/:userId
-router.put("/updateUserProfile/:userId",uploaded.single("image"),
+// PUT /updateUserProfileImage/:userId
+router.put(
+  "/updateUserProfileImage/:userId",
+  verifyToken,
+  upload.single("image"),
   async (req, res) => {
     try {
       const userId = req.params.userId;
-      const { fullName } = req.body;
 
       const user = await OdinCircledbModel.findById(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      if (fullName) user.fullName = fullName.trim().toLowerCase();
-
-      if (req.file) {
-        user.image = `/uploads/${req.file.filename}`; // save relative path
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file uploaded" });
       }
 
+      // Upload the image to Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "user_profiles", // optional: store in folder
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+
+      // Save Cloudinary URL in DB
+      user.image = result.secure_url;
       await user.save();
 
-      res.status(200).json({ message: "Profile updated successfully", user });
+      res.status(200).json({
+        message: "Profile image updated successfully",
+        imageUrl: user.image,
+      });
     } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Server error", error: error.message });
     }
   }
 );
+
 // router.put('/updateUserProfile/:userId', async (req, res) => {
 //   try {
 //     const userId = req.params.userId;
