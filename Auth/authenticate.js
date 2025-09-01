@@ -73,7 +73,8 @@ const storageFile = multer.diskStorage({
   }
 });
 
-const upload = multer({ storageFile });
+const uploaded = multer({ storageFile });
+
 // Configure Cloudinary properly
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,  // Correct syntax
@@ -3443,7 +3444,7 @@ router.get('/getUserProfile/:userId', async (req, res) => {
 });
 
 // PUT /updateUserProfile/:userId
-router.put("/updateUserProfile/:userId",upload.single("image"),
+router.put("/updateUserProfile/:userId",uploaded.single("image"),
   async (req, res) => {
     try {
       const userId = req.params.userId;
