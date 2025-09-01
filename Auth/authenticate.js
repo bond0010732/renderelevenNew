@@ -2078,20 +2078,25 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       }
     }
 
-    /*** STEP 4: UPLOAD IMAGE ***/
-    // const result = await new Promise((resolve, reject) => {
-    //   const stream = cloudinary.uploader.upload_stream(
-    //     { resource_type: 'image' },
-    //     (error, result) => {
-    //       if (error) reject(error);
-    //       else resolve(result);
-    //     }
-    //   );
-    //   stream.end(req.file.buffer);
-    // });
+ /*** STEP 4: HANDLE IMAGE (nullable) ***/
+    // let imageUrl = null;
+    // if (req.file) {
+    //   const result = await new Promise((resolve, reject) => {
+    //     const stream = cloudinary.uploader.upload_stream(
+    //       { resource_type: 'image' },
+    //       (error, result) => {
+    //         if (error) reject(error);
+    //         else resolve(result);
+    //       }
+    //     );
+    //     stream.end(req.file.buffer);
+    //   });
 
-    // if (!result || !result.secure_url) {
-    //   return res.status(500).json({ message: 'Image upload failed' });
+    //   if (!result || !result.secure_url) {
+    //     return res.status(500).json({ error: 'Image upload failed' });
+    //   }
+
+    //   imageUrl = result.secure_url;
     // }
 
     /*** STEP 5: HASH PASSWORD & CREATE OTP ***/
@@ -2104,7 +2109,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       fullName,
       email,
       password: hashedPassword,
-      image: result.secure_url || null,
+      image: null,
       expoPushToken,
       otp,
       referralCode: generateReferralCode(),
