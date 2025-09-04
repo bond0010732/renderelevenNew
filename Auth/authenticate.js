@@ -1547,9 +1547,9 @@ router.get("/transactionss/:userId", async (req, res) => {
       ...normalizeAddCashout(addcashout),
     ];
 
-    console.log("📦 Combined transactions before sort:", allTx.length);
+   // console.log("📦 Combined transactions before sort:", allTx.length);
     allTx.slice(0, 5).forEach((tx, i) => {
-      console.log(`🔎 Before sort [${i}]:`, tx.type, tx.createdAt, tx.unlockedAt);
+      //console.log(`🔎 Before sort [${i}]:`, tx.type, tx.createdAt, tx.unlockedAt);
     });
 
     // ✅ sort newest first by unlockedAt if available, otherwise createdAt
@@ -1561,7 +1561,7 @@ router.get("/transactionss/:userId", async (req, res) => {
 
     console.log("✅ After sort (first 5):");
     allTx.slice(0, 5).forEach((tx, i) => {
-      console.log(`   [${i}]`, tx.type, tx.createdAt, tx.unlockedAt);
+      //console.log(`   [${i}]`, tx.type, tx.createdAt, tx.unlockedAt);
     });
 
     // total count
@@ -1571,15 +1571,15 @@ router.get("/transactionss/:userId", async (req, res) => {
     const startIndex = (page - 1) * limit;
     const paginatedTx = allTx.slice(startIndex, startIndex + limit);
 
-    console.log("📑 Pagination:", {
-      startIndex,
-      endIndex: startIndex + limit,
-      returned: paginatedTx.length,
-    });
+    // console.log("📑 Pagination:", {
+    //   startIndex,
+    //   endIndex: startIndex + limit,
+    //   returned: paginatedTx.length,
+    // });
 
     console.log("📝 Paginated sample:");
     paginatedTx.forEach((tx, i) => {
-      console.log(`   Pg[${i}]`, tx.type, tx.createdAt, tx.unlockedAt);
+     // console.log(`   Pg[${i}]`, tx.type, tx.createdAt, tx.unlockedAt);
     });
 
     res.json({
@@ -1619,14 +1619,14 @@ router.get("/transactionss/:userId", async (req, res) => {
       CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
     ]);
 
-    console.log("📊 Raw counts:", {
-      topups: topups.length,
-      cashouts: cashouts.length,
-      wins: wins.length,
-      triviaBets: triviaBets.length,
-      logs: logs.length,
-      addcashout: addcashout.length,
-    });
+    // console.log("📊 Raw counts:", {
+    //   topups: topups.length,
+    //   cashouts: cashouts.length,
+    //   wins: wins.length,
+    //   triviaBets: triviaBets.length,
+    //   logs: logs.length,
+    //   addcashout: addcashout.length,
+    // });
 
     // normalization helpers
     const normalizeTopup = (arr) =>
@@ -1711,7 +1711,7 @@ router.get("/transactionss/:userId", async (req, res) => {
       ...normalizeAddCashout(addcashout),
     ];
 
-    console.log("📦 Combined transactions before sort:", allTx.length);
+   // console.log("📦 Combined transactions before sort:", allTx.length);
     allTx.slice(0, 5).forEach((tx, i) => {
       console.log(`🔎 Before sort [${i}]:`, tx.type, tx.date);
     });
@@ -1786,14 +1786,7 @@ router.get("/transactions/:userId", async (req, res) => {
       CashoutHistory.find({ userId }).sort({ createdAt: -1 }),
     ]);
 
-    console.log("📊 Raw counts:", {
-      topups: topups.length,
-      cashouts: cashouts.length,
-      wins: wins.length,
-      triviaBets: triviaBets.length,
-      logs: logs.length,
-      addcashout: addcashout.length,
-    });
+    
 
     // normalization helpers
     const normalizeTopup = (arr) =>
@@ -2058,14 +2051,6 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       await UnverifiedUser.deleteOne({ email });
     }
 
-    // Block if same fullName belongs to another unverified user with different email
-    // const existingNameUnverified = await UnverifiedUser.findOne({
-    //   fullName: { $regex: `^${fullName}$`, $options: 'i' },
-    //   email: { $ne: email }
-    // });
-    // if (existingNameUnverified) {
-    //   return res.status(409).json({ error: 'Full name already exists (unverified)' });
-    // }
 
     /*** STEP 3: REFERRAL CHECK ***/
     let referredBy = null;
@@ -2078,27 +2063,6 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
         return res.status(400).json({ error: 'Invalid referral code' });
       }
     }
-
- /*** STEP 4: HANDLE IMAGE (nullable) ***/
-    // let imageUrl = null;
-    // if (req.file) {
-    //   const result = await new Promise((resolve, reject) => {
-    //     const stream = cloudinary.uploader.upload_stream(
-    //       { resource_type: 'image' },
-    //       (error, result) => {
-    //         if (error) reject(error);
-    //         else resolve(result);
-    //       }
-    //     );
-    //     stream.end(req.file.buffer);
-    //   });
-
-    //   if (!result || !result.secure_url) {
-    //     return res.status(500).json({ error: 'Image upload failed' });
-    //   }
-
-    //   imageUrl = result.secure_url;
-    // }
 
     /*** STEP 5: HASH PASSWORD & CREATE OTP ***/
     const salt = await bcrypt.genSalt(10);
