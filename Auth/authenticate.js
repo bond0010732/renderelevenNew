@@ -661,7 +661,7 @@ async function finalizeWithdrawal({ userId, totalAmount, amount, fullName, title
     service: 'gmail',
     auth: {
       user: 'odincirclex@gmail.com',
-      pass: 'xyqi telz pmxd evkl', // App password
+      pass: 'zkwx qqks ouxu ebac', // App password
     },
   });
 
@@ -684,9 +684,6 @@ async function finalizeWithdrawal({ userId, totalAmount, amount, fullName, title
       <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
       <div><strong>Status:</strong> <span style="color:#111;">Success</span></div>
     </div>
-    <p style="font-size: 13px; color: #666; margin-top: 24px; text-align: center;">
-      Need help? <a href="mailto:odincirclex@gmail.com" style="color: #333; text-decoration: underline;">Contact Support</a>
-    </p>
   </div>
 </div>
 `,
@@ -2230,7 +2227,7 @@ if (referredBy) {
       service: "gmail",
       auth: {
         user: 'odincirclex@gmail.com',
-        pass: 'xyqi telz pmxd evkl',
+        pass: 'zkwx qqks ouxu ebac',
       },
     });
 
@@ -2246,8 +2243,6 @@ if (referredBy) {
         <h2 style="color: #000; margin-bottom: 10px; font-size: 24px">Confirm Your Identity</h2>
         <p style="font-size: 16px; margin-bottom: 20px;">Thank you for signing up to Odincircle. Here's your One Time Password to verify your account.</p>
         <h3 style="font-size: 24px; color: #000; margin-bottom: 10px; background-color: aliceblue; padding: 20px 0; text-align: center";>${otp}</h3>
-        <p style="font-size: 16px; margin-bottom: 20px;">If you have any complaint please contact our support team immediately via in-app or email.</p>
-        <p style="font-size: 16px; margin-bottom: 20px;">support@odincirclegames.co</p>
         <p style="font-size: 16px;">Please use this OTP to complete your registration process.</p>
       </div>`, // HTML content with inline CSS styles
     attachments: [
@@ -2316,7 +2311,7 @@ async function sendOTPByEmail(unverifiedUser, otp) {
         service: 'gmail',
         auth: {
           user: 'odincirclex@gmail.com',
-          pass: 'xyqi telz pmxd evkl',
+          pass: 'zkwx qqks ouxu ebac',
         },
       });
 
@@ -2907,7 +2902,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'odincirclex@gmail.com',
-    pass: 'xyqi telz pmxd evkl',
+    pass: 'zkwx qqks ouxu ebac',
   },
 });
 
@@ -3302,7 +3297,7 @@ async function ResendOTPByEmail(user, newOTP) {
         service: 'gmail',
         auth: {
           user: 'odincirclex@gmail.com',
-          pass: 'xyqi telz pmxd evkl',
+          pass: 'zkwx qqks ouxu ebac',
         },
       });
 
@@ -3549,7 +3544,7 @@ const sendOTPEmail = async (email, otp) => {
     service: 'gmail',
     auth: {
       user: 'odincirclex@gmail.com',
-      pass: 'xyqi telz pmxd evkl',
+      pass: 'zkwx qqks ouxu ebac',
     },
   });
 
@@ -4880,7 +4875,7 @@ router.post('/api/verify-transaction',verifyToken, async (req, res) => {
       service: 'gmail', // or another email service like 'SendGrid', 'Outlook', etc.
       auth: {
         user: 'odincirclex@gmail.com', // Your email address (use environment variables for security)
-        pass: 'xyqi telz pmxd evkl', // Your email password
+        pass: 'zkwx qqks ouxu ebac', // Your email password
       },
     });
 
