@@ -2928,47 +2928,42 @@ const generateToken = (email) => jwt.sign({ email }, jwtSecret, { expiresIn: '1h
 router.post('/register-device', async (req, res) => {
   const { expoPushToken, apnsToken, userId } = req.body;
 
-  if (!userId || (!expoPushToken && !apnsToken)) {
+  // Ignore invalid tokens
+  if ((!expoPushToken || expoPushToken === "unknown") && !apnsToken) {
     return res.status(400).json({
       success: false,
-      message: 'userId and at least one token (expoPushToken or apnsToken) are required',
+      message: 'Valid expoPushToken or apnsToken is required',
     });
   }
 
   try {
-    // Look for a device by either token
     let device = await Device.findOne({
       $or: [{ expoPushToken }, { apnsToken }],
     });
 
     if (!device) {
-      console.log('No existing device found, creating a new one.');
       device = new Device({
-        expoPushToken,
+        expoPushToken: expoPushToken !== "unknown" ? expoPushToken : undefined,
         apnsToken,
         users: [{ _id: userId }],
       });
     } else {
-      if (expoPushToken) device.expoPushToken = expoPushToken;
+      if (expoPushToken && expoPushToken !== "unknown") device.expoPushToken = expoPushToken;
       if (apnsToken) device.apnsToken = apnsToken;
 
-      // ✅ Safe check for existing user
-      const alreadyLinked = device.users.some(
-        (u) => u && u._id && u._id.toString() === userId.toString()
-      );
-
-      if (!alreadyLinked) {
+      if (device.users && !device.users.some(u => u._id.toString() === userId.toString())) {
         device.users.push({ _id: userId });
       }
     }
 
     await device.save();
-    res.json({ success: true, message: 'User and device token saved successfully' });
+    res.status(200).json({ success: true, message: 'User and device token saved successfully' });
   } catch (error) {
     console.error('Error saving device token:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
+
 
 
 router.post('/register-devic', async (req, res) => {
