@@ -2967,26 +2967,37 @@ router.post('/register-device', async (req, res) => {
 
   try {
     let device = await Device.findOne({
-      $or: [{ expoPushToken }, { apnsToken }],
+      $or: [
+        expoPushToken && { expoPushToken },
+        apnsToken && { apnsToken }
+      ].filter(Boolean), // remove falsy entries
     });
 
     if (!device) {
+      // ✅ Create new device
       device = new Device({
         expoPushToken: expoPushToken !== "unknown" ? expoPushToken : undefined,
         apnsToken,
-        users: [{ _id: userId }],
+        users: userId ? [userId] : [],
       });
     } else {
-      if (expoPushToken && expoPushToken !== "unknown") device.expoPushToken = expoPushToken;
-      if (apnsToken) device.apnsToken = apnsToken;
+      // ✅ Update existing device
+      if (expoPushToken && expoPushToken !== "unknown") {
+        device.expoPushToken = expoPushToken;
+      }
+      if (apnsToken) {
+        device.apnsToken = apnsToken;
+      }
 
-      // if (device.users && !device.users.some(u => u._id.toString() === userId.toString())) {
-      //   device.users.push({ _id: userId });
-      // }
-      if (!device.users.some(u => u._id.toString() === newUser._id.toString())) {
-  device.users.push({ _id: newUser._id });
-}
-      
+      // Ensure users array
+      if (!Array.isArray(device.users)) {
+        device.users = [];
+      }
+
+      // Add user if not already linked
+      if (userId && !device.users.some(u => u.toString() === userId.toString())) {
+        device.users.push(userId);
+      }
     }
 
     await device.save();
@@ -2996,6 +3007,50 @@ router.post('/register-device', async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
+
+
+// router.post('/register-device', async (req, res) => {
+//   const { expoPushToken, apnsToken, userId } = req.body;
+
+//   // Ignore invalid tokens
+//   if ((!expoPushToken || expoPushToken === "unknown") && !apnsToken) {
+//     return res.status(400).json({
+//       success: false,
+//       message: 'Valid expoPushToken or apnsToken is required',
+//     });
+//   }
+
+//   try {
+//     let device = await Device.findOne({
+//       $or: [{ expoPushToken }, { apnsToken }],
+//     });
+
+//     if (!device) {
+//       device = new Device({
+//         expoPushToken: expoPushToken !== "unknown" ? expoPushToken : undefined,
+//         apnsToken,
+//         users: [{ _id: userId }],
+//       });
+//     } else {
+//       if (expoPushToken && expoPushToken !== "unknown") device.expoPushToken = expoPushToken;
+//       if (apnsToken) device.apnsToken = apnsToken;
+
+//       // if (device.users && !device.users.some(u => u._id.toString() === userId.toString())) {
+//       //   device.users.push({ _id: userId });
+//       // }
+//       if (!device.users.some(u => u._id.toString() === newUser._id.toString())) {
+//   device.users.push({ _id: newUser._id });
+// }
+      
+//     }
+
+//     await device.save();
+//     res.status(200).json({ success: true, message: 'User and device token saved successfully' });
+//   } catch (error) {
+//     console.error('Error saving device token:', error);
+//     res.status(500).json({ success: false, message: 'Internal Server Error' });
+//   }
+// });
 
 
 
