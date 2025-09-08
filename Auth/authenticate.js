@@ -1066,6 +1066,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       password: unverifiedUser.password,
       image: unverifiedUser.image || null,
       expoPushToken: unverifiedUser.expoPushToken,
+      apnsToken: unverifiedUser.apnsToken,
       unlockedCount: 10,
       verified: true,
       referralCode: generateReferralCode(),           // generate new code for this user
@@ -1111,20 +1112,32 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
     }
 
     // ✅ Register device
-    if (unverifiedUser.expoPushToken) {
-      let device = await Device.findOne({ expoPushToken: unverifiedUser.expoPushToken });
+if (unverifiedUser.expoPushToken || unverifiedUser.apnsToken) {
+  let device = await Device.findOne({
+    $or: [
+      { expoPushToken: unverifiedUser.expoPushToken },
+      { apnsToken: unverifiedUser.apnsToken },
+    ],
+  });
 
-      if (!device) {
-        device = new Device({
-          expoPushToken: unverifiedUser.expoPushToken,
-          users: [newUser._id],
-        });
-      } else if (!device.users.includes(newUser._id)) {
-        device.users.push(newUser._id);
-      }
+  if (!device) {
+    device = new Device({
+      expoPushToken: unverifiedUser.expoPushToken,
+      apnsToken: unverifiedUser.apnsToken,
+      users: [newUser._id],
+    });
+  } else {
+    if (unverifiedUser.expoPushToken) device.expoPushToken = unverifiedUser.expoPushToken;
+    if (unverifiedUser.apnsToken) device.apnsToken = unverifiedUser.apnsToken;
 
-      await device.save();
+    if (!device.users.some(u => u.toString() === newUser._id.toString())) {
+      device.users.push(newUser._id);
     }
+  }
+
+  await device.save();
+}
+
 
     // ✅ Create wallet
     const wallet = await WalletModel.create({
@@ -2007,7 +2020,7 @@ router.get("/transactions/:userId", async (req, res) => {
 
 router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
   try {
-    let { fullName, email, password, expoPushToken, referralCode } = req.body;
+    let { fullName, email, password, expoPushToken,apnsToken, referralCode } = req.body;
 
     
     if (!fullName || !email || !password) {
@@ -2073,6 +2086,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       password: hashedPassword,
       image: null,
       expoPushToken,
+      apnsToken,
       otp,
       referralCode: generateReferralCode(),
       codeUsed: referralCode || null,
