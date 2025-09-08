@@ -2927,7 +2927,10 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
     // ✅ CLEAN UP
     await UnverifiedUser.deleteOne({ email });
 
-    res.status(201).json({ message: 'User verified and created successfully' });
+    res.status(201).json({
+      message: 'User verified and created successfully',
+        user: newUser,
+    });
 
   } catch (error) {
     console.error('OTP Verification Error:', error);
