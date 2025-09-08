@@ -1111,24 +1111,36 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       }
     }
 
-    // ✅ Register device
-if (unverifiedUser.expoPushToken || unverifiedUser.apnsToken) {
+// ✅ Register device
+if (
+  (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") ||
+  unverifiedUser.apnsToken
+) {
   let device = await Device.findOne({
     $or: [
-      { expoPushToken: unverifiedUser.expoPushToken },
-      { apnsToken: unverifiedUser.apnsToken },
-    ],
+      unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown"
+        ? { expoPushToken: unverifiedUser.expoPushToken }
+        : null,
+      unverifiedUser.apnsToken ? { apnsToken: unverifiedUser.apnsToken } : null,
+    ].filter(Boolean), // removes nulls
   });
 
   if (!device) {
     device = new Device({
-      expoPushToken: unverifiedUser.expoPushToken,
+      expoPushToken:
+        unverifiedUser.expoPushToken !== "unknown"
+          ? unverifiedUser.expoPushToken
+          : undefined,
       apnsToken: unverifiedUser.apnsToken,
       users: [newUser._id],
     });
   } else {
-    if (unverifiedUser.expoPushToken) device.expoPushToken = unverifiedUser.expoPushToken;
-    if (unverifiedUser.apnsToken) device.apnsToken = unverifiedUser.apnsToken;
+    if (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") {
+      device.expoPushToken = unverifiedUser.expoPushToken;
+    }
+    if (unverifiedUser.apnsToken) {
+      device.apnsToken = unverifiedUser.apnsToken;
+    }
 
     if (!device.users.some(u => u.toString() === newUser._id.toString())) {
       device.users.push(newUser._id);
