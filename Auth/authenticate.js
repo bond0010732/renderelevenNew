@@ -2892,6 +2892,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       password: unverifiedUser.password,
       image: unverifiedUser.image,
       expoPushToken: unverifiedUser.expoPushToken,
+      apnsToken: unverifiedUser.apnsToken,
       verified: true,
       referralCode: unverifiedUser.referralCode,   // their own new code
       codeUsed: unverifiedUser.codeUsed || null,   // the code they used to sign up
