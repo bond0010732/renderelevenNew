@@ -2928,7 +2928,6 @@ const generateToken = (email) => jwt.sign({ email }, jwtSecret, { expiresIn: '1h
 router.post('/register-device', async (req, res) => {
   const { expoPushToken, apnsToken, userId } = req.body;
 
-  // Validate input
   if (!userId || (!expoPushToken && !apnsToken)) {
     return res.status(400).json({
       success: false,
@@ -2937,7 +2936,7 @@ router.post('/register-device', async (req, res) => {
   }
 
   try {
-    // Try to find device by either token
+    // Look for a device by either token
     let device = await Device.findOne({
       $or: [{ expoPushToken }, { apnsToken }],
     });
@@ -2950,18 +2949,21 @@ router.post('/register-device', async (req, res) => {
         users: [{ _id: userId }],
       });
     } else {
-      // Update token if provided
       if (expoPushToken) device.expoPushToken = expoPushToken;
       if (apnsToken) device.apnsToken = apnsToken;
 
-      // Attach user if not already linked
-      if (device.users && !device.users.some(u => u._id.toString() === userId.toString())) {
+      // ✅ Safe check for existing user
+      const alreadyLinked = device.users.some(
+        (u) => u && u._id && u._id.toString() === userId.toString()
+      );
+
+      if (!alreadyLinked) {
         device.users.push({ _id: userId });
       }
     }
 
     await device.save();
-    res.status(200).json({ success: true, message: 'User and device token saved successfully' });
+    res.json({ success: true, message: 'User and device token saved successfully' });
   } catch (error) {
     console.error('Error saving device token:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
