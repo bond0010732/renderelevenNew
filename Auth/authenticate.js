@@ -2034,6 +2034,13 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
   try {
     let { fullName, email, password, expoPushToken,apnsToken, referralCode } = req.body;
 
+    console.log("📥 Incoming register request:", {
+  fullName,
+  email,
+  expoPushToken,
+  apnsToken,
+  referralCode,
+});
     
     if (!fullName || !email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -2106,6 +2113,12 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       expiresAt: new Date(Date.now() + 15 * 60 * 1000) // expires in 15 mins
     });
 
+    console.log("✅ Saved unverified user:", {
+  id: unverifiedUser._id,
+  email: unverifiedUser.email,
+  expoPushToken: unverifiedUser.expoPushToken,
+  apnsToken: unverifiedUser.apnsToken,
+});
     /*** STEP 7: SEND OTP ***/
     await sendOTPByEmail(unverifiedUser, otp);
 
@@ -2963,9 +2976,13 @@ router.post('/register-device', async (req, res) => {
       if (expoPushToken && expoPushToken !== "unknown") device.expoPushToken = expoPushToken;
       if (apnsToken) device.apnsToken = apnsToken;
 
-      if (device.users && !device.users.some(u => u._id.toString() === userId.toString())) {
-        device.users.push({ _id: userId });
-      }
+      // if (device.users && !device.users.some(u => u._id.toString() === userId.toString())) {
+      //   device.users.push({ _id: userId });
+      // }
+      if (!device.users.some(u => u._id.toString() === newUser._id.toString())) {
+  device.users.push({ _id: newUser._id });
+}
+      
     }
 
     await device.save();
