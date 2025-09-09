@@ -2196,6 +2196,7 @@ const fullName = req.body.fullName?.trim().toLowerCase();
       //image: result.secure_url, // Store the Cloudinary URL
       image: result.secure_url,  
       expoPushToken,
+      apnsToken,
       referralCode: generateReferralCode(),
       //codeUsed: unverifiedUser.codeUsed || null,
     });
@@ -2861,82 +2862,82 @@ router.put('/updateBankDetails/:userId', async (req, res) => {
 //   }
 // });
 
-router.post('/verifyEmailAndOTP', async (req, res) => {
-  try {
-    const { email, otp } = req.body;
+// router.post('/verifyEmailAndOTP', async (req, res) => {
+//   try {
+//     const { email, otp } = req.body;
 
-    const unverifiedUser = await UnverifiedUser.findOne({ email });
-    if (!unverifiedUser) {
-      return res.status(400).json({ error: 'No registration found. Please register again.' });
-    }
+//     const unverifiedUser = await UnverifiedUser.findOne({ email });
+//     if (!unverifiedUser) {
+//       return res.status(400).json({ error: 'No registration found. Please register again.' });
+//     }
 
-    if (unverifiedUser.otp !== otp) {
-      return res.status(400).json({ error: 'Invalid OTP' });
-    }
+//     if (unverifiedUser.otp !== otp) {
+//       return res.status(400).json({ error: 'Invalid OTP' });
+//     }
 
-    if (unverifiedUser.expiresAt < Date.now()) {
-      await UnverifiedUser.deleteOne({ email });
-      return res.status(400).json({ error: 'OTP expired. Please register again.' });
-    }
+//     if (unverifiedUser.expiresAt < Date.now()) {
+//       await UnverifiedUser.deleteOne({ email });
+//       return res.status(400).json({ error: 'OTP expired. Please register again.' });
+//     }
 
-    // Prevent duplicate verified users
-    const existingUser = await OdinCircledbModel.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
+//     // Prevent duplicate verified users
+//     const existingUser = await OdinCircledbModel.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({ error: 'User already exists' });
+//     }
 
-    // ✅ CREATE THE VERIFIED USER, INCLUDE CODE USED
-    const newUser = await OdinCircledbModel.create({
-      fullName: unverifiedUser.fullName,
-      email: unverifiedUser.email,
-      password: unverifiedUser.password,
-      image: unverifiedUser.image,
-      expoPushToken: unverifiedUser.expoPushToken,
-      apnsToken: unverifiedUser.apnsToken,
-      verified: true,
-      referralCode: unverifiedUser.referralCode,   // their own new code
-      codeUsed: unverifiedUser.codeUsed || null,   // the code they used to sign up
-    });
+//     // ✅ CREATE THE VERIFIED USER, INCLUDE CODE USED
+//     const newUser = await OdinCircledbModel.create({
+//       fullName: unverifiedUser.fullName,
+//       email: unverifiedUser.email,
+//       password: unverifiedUser.password,
+//       image: unverifiedUser.image,
+//       expoPushToken: unverifiedUser.expoPushToken,
+//       apnsToken: unverifiedUser.apnsToken,
+//       verified: true,
+//       referralCode: unverifiedUser.referralCode,   // their own new code
+//       codeUsed: unverifiedUser.codeUsed || null,   // the code they used to sign up
+//     });
 
-    // ✅ CREATE REFERRAL ENTRY IF codeUsed EXISTS
-    if (unverifiedUser.codeUsed) {
-      const referrer = await OdinCircledbModel.findOne({ referralCode: unverifiedUser.codeUsed });
+//     // ✅ CREATE REFERRAL ENTRY IF codeUsed EXISTS
+//     if (unverifiedUser.codeUsed) {
+//       const referrer = await OdinCircledbModel.findOne({ referralCode: unverifiedUser.codeUsed });
 
-      if (referrer) {
-        // Add to referrer's embedded referrals array
-        referrer.referrals.push({
-          referredUserId: newUser._id,
-          codeUsed: unverifiedUser.codeUsed,
-          email: newUser.email,
-          referralDate: new Date(),
-        });
-        await referrer.save();
+//       if (referrer) {
+//         // Add to referrer's embedded referrals array
+//         referrer.referrals.push({
+//           referredUserId: newUser._id,
+//           codeUsed: unverifiedUser.codeUsed,
+//           email: newUser.email,
+//           referralDate: new Date(),
+//         });
+//         await referrer.save();
 
-        // Create standalone referral entry
-        await ReferralModel.create({
-          referredUserId: newUser._id,
-          referringUserId: referrer._id,
-          codeUsed: unverifiedUser.codeUsed,
-          email: newUser.email,
-          status: 'UnPaid',
-          referralDate: new Date(),
-        });
-      }
-    }
+//         // Create standalone referral entry
+//         await ReferralModel.create({
+//           referredUserId: newUser._id,
+//           referringUserId: referrer._id,
+//           codeUsed: unverifiedUser.codeUsed,
+//           email: newUser.email,
+//           status: 'UnPaid',
+//           referralDate: new Date(),
+//         });
+//       }
+//     }
 
-    // ✅ CLEAN UP
-    await UnverifiedUser.deleteOne({ email });
+//     // ✅ CLEAN UP
+//     await UnverifiedUser.deleteOne({ email });
 
-    res.status(201).json({
-      message: 'User verified and created successfully',
-        user: newUser,
-    });
+//     res.status(201).json({
+//       message: 'User verified and created successfully',
+//         user: newUser,
+//     });
 
-  } catch (error) {
-    console.error('OTP Verification Error:', error);
-    res.status(500).json({ error: 'Failed to verify user' });
-  }
-});
+//   } catch (error) {
+//     console.error('OTP Verification Error:', error);
+//     res.status(500).json({ error: 'Failed to verify user' });
+//   }
+// });
 
 
 
