@@ -57,6 +57,7 @@ const OdinCircleSchema = new Schema({
     otp: String,
     otpTrans: String,
     expoPushToken: String,
+    apnsToken: String,
     unlockedCount: { type: Number,default: 10,},
     referralCode: { type: String, unique: true },
    codeUsed: {
