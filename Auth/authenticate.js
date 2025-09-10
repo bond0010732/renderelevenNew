@@ -896,6 +896,107 @@ router.get("/paystack/callback", async (req, res) => {
   }
 });
 
+// router.post("/paystack/verify", async (req, res) => {
+//   const { reference, userId } = req.body;
+
+//   try {
+//     // ✅ 1. Verify with Paystack
+//     const response = await axios.get(
+//       `https://api.paystack.co/transaction/verify/${reference}`,
+//       { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+//     );
+
+//     const transactionDetails = response.data.data;
+//     if (!transactionDetails || transactionDetails.status !== "success") {
+//       return res.status(400).json({ message: "Transaction verification failed" });
+//     }
+
+//     const amount = parseFloat(transactionDetails.amount) / 100;
+//     if (isNaN(amount) || amount <= 0) {
+//       return res.status(400).json({ message: "Invalid transaction amount" });
+//     }
+
+//     // ✅ 2. Update user's wallet balance
+//     const updatedUser = await OdinCircledbModel.findOneAndUpdate(
+//       { _id: userId },
+//       { $inc: { "wallet.balance": amount } },
+//       { new: true }
+//     );
+
+//     if (!updatedUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // ✅ 3. Save top-up record
+//     await new TopUpModel({
+//       userId: updatedUser._id,
+//       amount,
+//       transactionId: transactionDetails.id,
+//       txRef: transactionDetails.reference,
+//       email: transactionDetails.customer.email,
+//     }).save();
+
+//     // Step 4: Check if this is the user's FIRST top-up
+//     const topUpCount = await TopUpModel.countDocuments({ userId: updatedUser._id });
+
+//     // ✅ 5. Check if referred and qualifies for referral bonus
+//     if (topUpCount === 1) {
+//       const referral = await ReferralModel.findOne({ referredUserId: userId, status: "UnPaid" });
+
+//       if (referral) {
+//         const referrer = await OdinCircledbModel.findById(referral.referringUserId);
+
+//         if (referrer) {
+//           const bonusAmount = 500; // Set your referral bonus amount here
+
+//           // ✅ Credit the referrer's wallet
+//           referrer.wallet.cashoutbalance += bonusAmount;
+//           await referrer.save();
+
+//           // ✅ Mark referral as Paid
+//           referral.status = "Paid";
+//           await referral.save();
+
+//           // ✅ Optional: log this referral reward
+//           await TopUpModel.create({
+//             userId: referrer._id,
+//             amount: bonusAmount,
+//             type: "referral_bonus",
+//             transactionId: `REF-${Date.now()}`,
+//             txRef: `Referral-${userId}`,
+//             email: referrer.email,
+//           });
+
+//           // --- Send Push Notification ---
+//           if (referrer.expoPushToken && Expo.isExpoPushToken(referrer.expoPushToken)) {
+//             await expo.sendPushNotificationsAsync([
+//               {
+//                 to: referrer.expoPushToken,
+//                 title: "Referral Bonus 🎉",
+//                 body: `💸 Referral bonus unlocked! ₦${bonusAmount} has been added to your wallet.`,
+//                  data: {
+//                     screen: "Wallet",   // 👈 navigate here on tap
+//                     type: "referralBonus",
+//                     amount: bonusAmount,
+//                },
+//               },
+//             ]);
+//           }
+//         }
+//       }
+//     }
+
+//     return res.json({
+//       status: true,
+//       message: "Transaction verified, wallet updated",
+//       newBalance: updatedUser.wallet.balance,
+//     });
+//   } catch (error) {
+//     console.error("Error verifying transaction:", error.message);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
 router.post("/paystack/verify", async (req, res) => {
   const { reference, userId } = req.body;
 
@@ -936,20 +1037,22 @@ router.post("/paystack/verify", async (req, res) => {
       email: transactionDetails.customer.email,
     }).save();
 
-    // Step 4: Check if this is the user's FIRST top-up
+    // ✅ 4. Check if this is the user's FIRST top-up
     const topUpCount = await TopUpModel.countDocuments({ userId: updatedUser._id });
 
-    // ✅ 5. Check if referred and qualifies for referral bonus
     if (topUpCount === 1) {
-      const referral = await ReferralModel.findOne({ referredUserId: userId, status: "UnPaid" });
+      const referral = await ReferralModel.findOne({
+        referredUserId: userId,
+        status: "UnPaid",
+      });
 
       if (referral) {
         const referrer = await OdinCircledbModel.findById(referral.referringUserId);
 
         if (referrer) {
-          const bonusAmount = 500; // Set your referral bonus amount here
+          const bonusAmount = 500;
 
-          // ✅ Credit the referrer's wallet
+          // ✅ Credit referrer's wallet
           referrer.wallet.cashoutbalance += bonusAmount;
           await referrer.save();
 
@@ -957,7 +1060,7 @@ router.post("/paystack/verify", async (req, res) => {
           referral.status = "Paid";
           await referral.save();
 
-          // ✅ Optional: log this referral reward
+          // ✅ Log this referral bonus
           await TopUpModel.create({
             userId: referrer._id,
             amount: bonusAmount,
@@ -967,25 +1070,51 @@ router.post("/paystack/verify", async (req, res) => {
             email: referrer.email,
           });
 
-          // --- Send Push Notification ---
+          // --- Send Notification + Email in Parallel ---
+          const tasks = [];
+
+          // 📧 Email
+          tasks.push(
+            transporter.sendMail({
+              from: 'odincirclex@gmail.com',
+              to: referrer.email,
+              subject: "Referral Bonus 🎉",
+              html: `<p>Hi ${referrer.fullName || "User"},</p>
+                     <p>💸 Congrats! ₦${bonusAmount} has been added to your wallet as a referral bonus.</p>`,
+            })
+          );
+
+          // 🔔 Push notification
           if (referrer.expoPushToken && Expo.isExpoPushToken(referrer.expoPushToken)) {
-            await expo.sendPushNotificationsAsync([
-              {
-                to: referrer.expoPushToken,
-                title: "Referral Bonus 🎉",
-                body: `💸 Referral bonus unlocked! ₦${bonusAmount} has been added to your wallet.`,
-                 data: {
-                    screen: "Wallet",   // 👈 navigate here on tap
+            tasks.push(
+              expo.sendPushNotificationsAsync([
+                {
+                  to: referrer.expoPushToken,
+                  title: "Referral Bonus 🎉",
+                  body: `💸 Referral bonus unlocked! ₦${bonusAmount} has been added to your wallet.`,
+                  data: {
+                    screen: "Wallet",
                     type: "referralBonus",
                     amount: bonusAmount,
-               },
-              },
-            ]);
+                  },
+                },
+              ])
+            );
           }
+
+          // Run them in parallel without blocking each other
+          Promise.allSettled(tasks).then((results) => {
+            results.forEach((r, i) => {
+              if (r.status === "rejected") {
+                console.error("❌ Notification/Email failed:", r.reason);
+              }
+            });
+          });
         }
       }
     }
 
+    // ✅ Respond immediately
     return res.json({
       status: true,
       message: "Transaction verified, wallet updated",
@@ -996,7 +1125,6 @@ router.post("/paystack/verify", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 
 router.post('/login', async (req, res) => {
