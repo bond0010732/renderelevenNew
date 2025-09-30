@@ -2160,13 +2160,14 @@ router.get("/transactions/:userId", async (req, res) => {
 
 router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
   try {
-    let { fullName, email, password, expoPushToken,apnsToken, referralCode } = req.body;
+    let { fullName, email, password, expoPushToken,apnsToken,webPushSubscription, referralCode } = req.body;
 
     console.log("📥 Incoming register request:", {
   fullName,
   email,
   expoPushToken,
   apnsToken,
+  webPushSubscription,
   referralCode,
 });
     
@@ -2234,6 +2235,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
       image: null,
       expoPushToken,
       apnsToken,
+      webPushSubscription,
       otp,
       referralCode: generateReferralCode(),
       codeUsed: referralCode || null,
@@ -2246,6 +2248,7 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
   email: unverifiedUser.email,
   expoPushToken: unverifiedUser.expoPushToken,
   apnsToken: unverifiedUser.apnsToken,
+  webPushSubscription: unverifiedUser.webPushSubscription,
 });
     /*** STEP 7: SEND OTP ***/
     await sendOTPByEmail(unverifiedUser, otp);
