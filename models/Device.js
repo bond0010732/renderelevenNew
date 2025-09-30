@@ -5,7 +5,6 @@ const Schema = mongoose.Schema;
 const deviceSchema = new Schema({
   expoPushToken: {
     type: String,
-    required: true,
     unique: true // Ensure that each device has a unique token
   },
     apnsToken: { type: String, unique: true, sparse: true }, 
