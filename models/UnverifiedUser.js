@@ -48,7 +48,10 @@ codeUsed: String,     // code used during sign-up (from referrer)
     type: String,
     default: null,
   },
-
+      webPushSubscription: {
+        type: String,
+        defaults: null,
+      },
   createdAt: {
     type: Date,
     default: Date.now,
