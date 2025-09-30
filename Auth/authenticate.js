@@ -1195,6 +1195,7 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       image: unverifiedUser.image || null,
       expoPushToken: unverifiedUser.expoPushToken,
       apnsToken: unverifiedUser.apnsToken,
+      webPushSubscription: unverifiedUser.webPushSubscription,
       unlockedCount: 10,
       verified: true,
       referralCode: generateReferralCode(),           // generate new code for this user
@@ -1260,6 +1261,7 @@ if (
           ? unverifiedUser.expoPushToken
           : undefined,
       apnsToken: unverifiedUser.apnsToken,
+       webPushSubscription: unverifiedUser.webPushSubscription
       users: [newUser._id],
     });
   } else {
@@ -2328,6 +2330,7 @@ const fullName = req.body.fullName?.trim().toLowerCase();
       image: result.secure_url,  
       expoPushToken,
       apnsToken,
+      webPushSubscription,
       referralCode: generateReferralCode(),
       //codeUsed: unverifiedUser.codeUsed || null,
     });
@@ -3087,7 +3090,7 @@ const generateToken = (email) => jwt.sign({ email }, jwtSecret, { expiresIn: '1h
 
 
 router.post('/register-device', async (req, res) => {
-  const { expoPushToken, apnsToken, userId } = req.body;
+  const { expoPushToken, apnsToken, webPushSubscription, userId } = req.body;
 
   // Ignore invalid tokens
   if ((!expoPushToken || expoPushToken === "unknown") && !apnsToken) {
@@ -3101,7 +3104,8 @@ router.post('/register-device', async (req, res) => {
     let device = await Device.findOne({
       $or: [
         expoPushToken && { expoPushToken },
-        apnsToken && { apnsToken }
+        apnsToken && { apnsToken },
+         webPushSubscription && { webPushSubscription},
       ].filter(Boolean), // remove falsy entries
     });
 
@@ -3110,6 +3114,7 @@ router.post('/register-device', async (req, res) => {
       device = new Device({
         expoPushToken: expoPushToken !== "unknown" ? expoPushToken : undefined,
         apnsToken,
+        webPushSubscription,
         users: userId ? [userId] : [],
       });
     } else {
@@ -3119,6 +3124,9 @@ router.post('/register-device', async (req, res) => {
       }
       if (apnsToken) {
         device.apnsToken = apnsToken;
+      }
+      if (webPushSubscription) {
+        device.webPushSubscription =  webPushSubscription
       }
 
       // Ensure users array
