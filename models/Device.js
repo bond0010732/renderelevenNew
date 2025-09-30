@@ -8,6 +8,10 @@ const deviceSchema = new Schema({
     unique: true // Ensure that each device has a unique token
   },
     apnsToken: { type: String, unique: true, sparse: true }, 
+     webPushSubscription: {
+        type: String,
+        defaults: null,
+      },
   users: [{
     _id: {
       type: Schema.Types.ObjectId,
