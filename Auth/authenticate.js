@@ -1241,41 +1241,39 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
     }
 
 // ✅ Register device
-if (
-  (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") ||
-  unverifiedUser.apnsToken
-) {
-  let device = await Device.findOne({
-    $or: [
-      unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown"
-        ? { expoPushToken: unverifiedUser.expoPushToken }
-        : null,
-      unverifiedUser.apnsToken ? { apnsToken: unverifiedUser.apnsToken } : null,
-    ].filter(Boolean), // removes nulls
+const deviceQuery = {
+  $or: [
+    unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown"
+      ? { expoPushToken: unverifiedUser.expoPushToken }
+      : null,
+    unverifiedUser.apnsToken ? { apnsToken: unverifiedUser.apnsToken } : null,
+    unverifiedUser.webPushSubscription ? { webPushSubscription: unverifiedUser.webPushSubscription } : null,
+  ].filter(Boolean),
+};
+
+let device = await Device.findOne(deviceQuery);
+
+if (!device) {
+  device = new Device({
+    expoPushToken: unverifiedUser.expoPushToken !== "unknown" ? unverifiedUser.expoPushToken : undefined,
+    apnsToken: unverifiedUser.apnsToken,
+    webPushSubscription: unverifiedUser.webPushSubscription,
+    users: [newUser._id],
   });
-
-  if (!device) {
-    device = new Device({
-      expoPushToken:
-        unverifiedUser.expoPushToken !== "unknown"
-          ? unverifiedUser.expoPushToken
-          : undefined,
-      apnsToken: unverifiedUser.apnsToken,
-       webPushSubscription: unverifiedUser.webPushSubscription,
-      users: [newUser._id],
-    });
-  } else {
-    if (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") {
-      device.expoPushToken = unverifiedUser.expoPushToken;
-    }
-    if (unverifiedUser.apnsToken) {
-      device.apnsToken = unverifiedUser.apnsToken;
-    }
-
-    if (!device.users.some(u => u.toString() === newUser._id.toString())) {
-      device.users.push(newUser._id);
-    }
+} else {
+  if (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") {
+    device.expoPushToken = unverifiedUser.expoPushToken;
   }
+  if (unverifiedUser.apnsToken) {
+    device.apnsToken = unverifiedUser.apnsToken;
+  }
+  if (unverifiedUser.webPushSubscription) {
+    device.webPushSubscription = unverifiedUser.webPushSubscription;
+  }
+  if (!device.users.some(u => u.toString() === newUser._id.toString())) {
+    device.users.push(newUser._id);
+  }
+}
 
   await device.save();
 }
