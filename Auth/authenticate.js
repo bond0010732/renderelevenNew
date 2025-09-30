@@ -1261,7 +1261,7 @@ if (
           ? unverifiedUser.expoPushToken
           : undefined,
       apnsToken: unverifiedUser.apnsToken,
-       webPushSubscription: unverifiedUser.webPushSubscription
+       webPushSubscription: unverifiedUser.webPushSubscription,
       users: [newUser._id],
     });
   } else {
