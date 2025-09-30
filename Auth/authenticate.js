@@ -1155,6 +1155,7 @@ router.post('/login', async (req, res) => {
 });
 
 
+
 router.post('/verifyEmailAndOTP', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -1191,15 +1192,15 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
     const newUser = await OdinCircledbModel.create({
       fullName: unverifiedUser.fullName,
       email: unverifiedUser.email,
-      password: unverifiedUser.password,
+      password: unverifiedUser.password, // ⚠️ make sure this is hashed earlier
       image: unverifiedUser.image || null,
       expoPushToken: unverifiedUser.expoPushToken,
       apnsToken: unverifiedUser.apnsToken,
       webPushSubscription: unverifiedUser.webPushSubscription,
       unlockedCount: 10,
       verified: true,
-      referralCode: generateReferralCode(),           // generate new code for this user
-      codeUsed: unverifiedUser.codeUsed || null       // track code used (if any)
+      referralCode: generateReferralCode(),
+      codeUsed: unverifiedUser.codeUsed || null
     });
 
     // ✅ Handle referral if codeUsed exists
@@ -1214,7 +1215,6 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
         );
 
         if (!isAlreadyReferred) {
-          // Add to referrer's embedded list
           referringUser.referrals.push({
             referredUserId: newUser._id,
             codeUsed: unverifiedUser.codeUsed,
@@ -1223,7 +1223,6 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
           });
           await referringUser.save();
 
-          // Create referral tracking entry
           await ReferralModel.create({
             referredUserId: newUser._id,
             referringUserId: referringUser._id,
@@ -1240,44 +1239,42 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       }
     }
 
-// ✅ Register device
-const deviceQuery = {
-  $or: [
-    unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown"
-      ? { expoPushToken: unverifiedUser.expoPushToken }
-      : null,
-    unverifiedUser.apnsToken ? { apnsToken: unverifiedUser.apnsToken } : null,
-    unverifiedUser.webPushSubscription ? { webPushSubscription: unverifiedUser.webPushSubscription } : null,
-  ].filter(Boolean),
-};
+    // ✅ Register device (Expo / APNS / WebPush)
+    const deviceQuery = {
+      $or: [
+        unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown"
+          ? { expoPushToken: unverifiedUser.expoPushToken }
+          : null,
+        unverifiedUser.apnsToken ? { apnsToken: unverifiedUser.apnsToken } : null,
+        unverifiedUser.webPushSubscription ? { webPushSubscription: unverifiedUser.webPushSubscription } : null,
+      ].filter(Boolean),
+    };
 
-let device = await Device.findOne(deviceQuery);
+    let device = await Device.findOne(deviceQuery);
 
-if (!device) {
-  device = new Device({
-    expoPushToken: unverifiedUser.expoPushToken !== "unknown" ? unverifiedUser.expoPushToken : undefined,
-    apnsToken: unverifiedUser.apnsToken,
-    webPushSubscription: unverifiedUser.webPushSubscription,
-    users: [newUser._id],
-  });
-} else {
-  if (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") {
-    device.expoPushToken = unverifiedUser.expoPushToken;
-  }
-  if (unverifiedUser.apnsToken) {
-    device.apnsToken = unverifiedUser.apnsToken;
-  }
-  if (unverifiedUser.webPushSubscription) {
-    device.webPushSubscription = unverifiedUser.webPushSubscription;
-  }
-  if (!device.users.some(u => u.toString() === newUser._id.toString())) {
-    device.users.push(newUser._id);
-  }
-}
+    if (!device) {
+      device = new Device({
+        expoPushToken: unverifiedUser.expoPushToken !== "unknown" ? unverifiedUser.expoPushToken : undefined,
+        apnsToken: unverifiedUser.apnsToken,
+        webPushSubscription: unverifiedUser.webPushSubscription,
+        users: [newUser._id],
+      });
+    } else {
+      if (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") {
+        device.expoPushToken = unverifiedUser.expoPushToken;
+      }
+      if (unverifiedUser.apnsToken) {
+        device.apnsToken = unverifiedUser.apnsToken;
+      }
+      if (unverifiedUser.webPushSubscription) {
+        device.webPushSubscription = unverifiedUser.webPushSubscription;
+      }
+      if (!device.users.some(u => u.toString() === newUser._id.toString())) {
+        device.users.push(newUser._id);
+      }
+    }
 
-  await device.save();
-}
-
+    await device.save();
 
     // ✅ Create wallet
     const wallet = await WalletModel.create({
@@ -1321,6 +1318,7 @@ if (!device) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // ✅ GET all transactions (topup, cashout, winnings) for a user
 // ✅ GET all transactions (topup, cashout, winnings) for a user
