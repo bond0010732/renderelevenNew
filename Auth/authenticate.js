@@ -2158,7 +2158,16 @@ router.get("/transactions/:userId", async (req, res) => {
 
 router.post('/register', upload.single('image'), registrationLimiter, async (req, res) => {
   try {
-    let { fullName, email, password, expoPushToken,apnsToken,webPushSubscription, referralCode } = req.body;
+    let { fullName, email, password, expoPushToken,apnsToken, referralCode } = req.body;
+
+    let webPushSubscription = null;
+if (req.body.webPushSubscription) {
+  try {
+    webPushSubscription = JSON.parse(req.body.webPushSubscription);
+  } catch (err) {
+    console.error("❌ Invalid webPushSubscription JSON:", err);
+  }
+}
 
     console.log("📥 Incoming register request:", {
   fullName,
