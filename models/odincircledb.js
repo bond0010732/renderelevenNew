@@ -58,7 +58,14 @@ const OdinCircleSchema = new Schema({
     otpTrans: String,
     expoPushToken: String,
     apnsToken: String,
-    webPushSubscription: String,
+    webPushSubscription: {
+    endpoint: String,
+    expirationTime: Date,
+    keys: {
+      p256dh: String,
+      auth: String,
+    },
+  },
     unlockedCount: { type: Number,default: 10,},
     referralCode: { type: String, unique: true },
    codeUsed: {
