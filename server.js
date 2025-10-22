@@ -30,7 +30,10 @@ const LOCALHOST2 = process.env.LOCALHOST2
 
 const allowedOrigins = [`${LOCALHOST1}`, `${LOCALHOST2}`, ];
 
-app.use(cors({ origin: "*" })); // Temporarily allow all for debugging
+app.use(cors({ 
+ origin: ["http://localhost:8081", 'https://unforested-phytoclimatologic-cedrick.ngrok-free.dev',"https://www.betxcircle.app"],
+   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+})); // Temporarily allow all for debugging
 
 
 app.get('/', (req, res) => {
