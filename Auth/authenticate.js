@@ -2160,21 +2160,11 @@ router.post('/register', upload.single('image'), registrationLimiter, async (req
   try {
     let { fullName, email, password, expoPushToken,apnsToken, referralCode } = req.body;
 
-    let webPushSubscription = null;
-if (req.body.webPushSubscription) {
-  try {
-    webPushSubscription = JSON.parse(req.body.webPushSubscription);
-  } catch (err) {
-    console.error("❌ Invalid webPushSubscription JSON:", err);
-  }
-}
-
     console.log("📥 Incoming register request:", {
   fullName,
   email,
   expoPushToken,
   apnsToken,
-  webPushSubscription,
   referralCode,
 });
     
@@ -2242,7 +2232,6 @@ if (req.body.webPushSubscription) {
       image: null,
       expoPushToken,
       apnsToken,
-      webPushSubscription,
       otp,
       referralCode: generateReferralCode(),
       codeUsed: referralCode || null,
@@ -2255,7 +2244,6 @@ if (req.body.webPushSubscription) {
   email: unverifiedUser.email,
   expoPushToken: unverifiedUser.expoPushToken,
   apnsToken: unverifiedUser.apnsToken,
-  webPushSubscription: unverifiedUser.webPushSubscription,
 });
     /*** STEP 7: SEND OTP ***/
     await sendOTPByEmail(unverifiedUser, otp);
