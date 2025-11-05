@@ -3115,9 +3115,10 @@ router.post('/register-device', async (req, res) => {
       if (expoPushToken && expoPushToken !== "unknown") {
         device.expoPushToken = expoPushToken;
       }
-      if (apnsToken) {
-        device.apnsToken = apnsToken;
-      }
+  if (apnsToken && apnsToken !== "unknown") {
+  device.apnsToken = apnsToken;
+}
+
       if (webPushSubscription) {
         device.webPushSubscription =  webPushSubscription
       }
