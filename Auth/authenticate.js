@@ -3082,65 +3082,148 @@ const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString(
 const generateToken = (email) => jwt.sign({ email }, jwtSecret, { expiresIn: '1h' });
 
 
+
 router.post('/register-device', async (req, res) => {
   const { expoPushToken, apnsToken, webPushSubscription, userId } = req.body;
 
-  // Ignore invalid tokens
-  if ((!expoPushToken || expoPushToken === "unknown") && !apnsToken) {
+  console.log("📩 Incoming Device Registration Request:");
+  console.log("   userId:", userId);
+  console.log("   expoPushToken:", expoPushToken);
+  console.log("   apnsToken:", apnsToken);
+  console.log("   webPushSubscription:", webPushSubscription);
+
+  // Filter invalid tokens
+  const normalizedExpoToken = expoPushToken && expoPushToken !== "unknown" ? expoPushToken : null;
+  const normalizedApnsToken = apnsToken && apnsToken !== "unknown" ? apnsToken : null;
+
+  if (!normalizedExpoToken && !normalizedApnsToken) {
+    console.log("❌ No valid push token provided");
     return res.status(400).json({
       success: false,
-      message: 'Valid expoPushToken or apnsToken is required',
+      message: "Valid Expo or APNs token required"
     });
   }
 
   try {
     let device = await Device.findOne({
       $or: [
-        expoPushToken && { expoPushToken },
-        apnsToken && { apnsToken },
-         webPushSubscription && { webPushSubscription},
-      ].filter(Boolean), // remove falsy entries
+        normalizedExpoToken && { expoPushToken: normalizedExpoToken },
+        normalizedApnsToken && { apnsToken: normalizedApnsToken },
+        webPushSubscription && { webPushSubscription }
+      ].filter(Boolean),
     });
 
     if (!device) {
-      // ✅ Create new device
+      console.log("🆕 Creating new device record...");
       device = new Device({
-        expoPushToken: expoPushToken !== "unknown" ? expoPushToken : undefined,
-        apnsToken,
+        expoPushToken: normalizedExpoToken,
+        apnsToken: normalizedApnsToken,
         webPushSubscription,
-        users: userId ? [userId] : [],
+        users: userId ? [userId] : []
       });
     } else {
-      // ✅ Update existing device
-      if (expoPushToken && expoPushToken !== "unknown") {
-        device.expoPushToken = expoPushToken;
-      }
-  if (apnsToken && apnsToken !== "unknown") {
-  device.apnsToken = apnsToken;
-}
+      console.log("♻️ Updating existing device record...");
 
-      if (webPushSubscription) {
-        device.webPushSubscription =  webPushSubscription
-      }
+      if (normalizedExpoToken) device.expoPushToken = normalizedExpoToken;
+      if (normalizedApnsToken) device.apnsToken = normalizedApnsToken;
+      if (webPushSubscription) device.webPushSubscription = webPushSubscription;
 
-      // Ensure users array
-      if (!Array.isArray(device.users)) {
-        device.users = [];
-      }
+      if (!Array.isArray(device.users)) device.users = [];
 
-      // Add user if not already linked
       if (userId && !device.users.some(u => u.toString() === userId.toString())) {
         device.users.push(userId);
       }
     }
 
     await device.save();
-    res.status(200).json({ success: true, message: 'User and device token saved successfully' });
+
+    console.log("✅ Device Token Saved to DB:");
+    console.log({
+      savedUserId: userId,
+      savedExpoToken: device.expoPushToken,
+      savedApnsToken: device.apnsToken,
+      totalUsersLinkedToDevice: device.users.length
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "User and device token saved successfully",
+      data: {
+        userId,
+        expoPushToken: device.expoPushToken,
+        apnsToken: device.apnsToken
+      }
+    });
+
   } catch (error) {
-    console.error('Error saving device token:', error);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    console.error("🚨 Error saving device token:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
   }
 });
+
+
+// router.post('/register-device', async (req, res) => {
+//   const { expoPushToken, apnsToken, webPushSubscription, userId } = req.body;
+
+//   // Ignore invalid tokens
+//   if ((!expoPushToken || expoPushToken === "unknown") && !apnsToken) {
+//     return res.status(400).json({
+//       success: false,
+//       message: 'Valid expoPushToken or apnsToken is required',
+//     });
+//   }
+
+//   try {
+//     let device = await Device.findOne({
+//       $or: [
+//         expoPushToken && { expoPushToken },
+//         apnsToken && { apnsToken },
+//          webPushSubscription && { webPushSubscription},
+//       ].filter(Boolean), // remove falsy entries
+//     });
+
+//     if (!device) {
+//       // ✅ Create new device
+//       device = new Device({
+//         expoPushToken: expoPushToken !== "unknown" ? expoPushToken : undefined,
+//         apnsToken,
+//         webPushSubscription,
+//         users: userId ? [userId] : [],
+//       });
+//     } else {
+//       // ✅ Update existing device
+//       if (expoPushToken && expoPushToken !== "unknown") {
+//         device.expoPushToken = expoPushToken;
+//       }
+//   if (apnsToken && apnsToken !== "unknown") {
+//   device.apnsToken = apnsToken;
+// }
+
+//       if (webPushSubscription) {
+//         device.webPushSubscription =  webPushSubscription
+//       }
+
+//       // Ensure users array
+//       if (!Array.isArray(device.users)) {
+//         device.users = [];
+//       }
+
+//       // Add user if not already linked
+//       if (userId && !device.users.some(u => u.toString() === userId.toString())) {
+//         device.users.push(userId);
+//       }
+//     }
+
+//     await device.save();
+//     res.status(200).json({ success: true, message: 'User and device token saved successfully' });
+//   } catch (error) {
+//     console.error('Error saving device token:', error);
+//     res.status(500).json({ success: false, message: 'Internal Server Error' });
+//   }
+// });
 
 
 // router.post('/register-device', async (req, res) => {
