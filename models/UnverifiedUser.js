@@ -48,14 +48,6 @@ codeUsed: String,     // code used during sign-up (from referrer)
     type: String,
     default: null,
   },
-     webPushSubscription: {
-    endpoint: String,
-    expirationTime: Date,
-    keys: {
-      p256dh: String,
-      auth: String,
-    },
-  },
   createdAt: {
     type: Date,
     default: Date.now,
