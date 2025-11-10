@@ -53,6 +53,7 @@ const BatchAnswer = require('../models/BatchAnswerModel');
 const cloudinary = require('cloudinary').v2;
 const { Expo } = require('expo-server-sdk');
 const BatchModel = require('../models/BatchModel');
+const TictacModel = require('../models/TictacModel')
 const FaceOffModel = require('../models/FaceOffModel');
 const FaceOffAnswer = require('../models/FaceOffAnswerModel');
 const expo = new Expo();
@@ -154,6 +155,19 @@ router.post("/toggle/:key", async (req, res) => {
     res.json(toggle);
   } catch (err) {
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get('/tictac', async (req, res) => {
+  try {
+    const records = await TictacModel.find().sort({ createdAt: -1 }); // newest first
+    res.status(200).json({
+      message: 'Fetched all tictac records successfully',
+      data: records,
+    });
+  } catch (error) {
+    console.error('Error fetching tictac records:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
