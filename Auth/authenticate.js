@@ -4246,6 +4246,25 @@ router.get('/user/:userId/cashoutbalance', async (req, res) => {
     }
   });
 
+// DELETE /delete-account
+router.delete('/delete-account/:userId',  async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await OdinCircledbModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await OdinCircledbModel.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: 'Error deleting account' });
+  }
+});
 
 
   router.post('/user-amount',verifyToken, async (req, res) => {
