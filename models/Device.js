@@ -10,7 +10,6 @@ const deviceSchema = new Schema({
     apnsToken: { type: String, sparse: true }, 
     webPushSubscription: {
     endpoint: String,
-    sparse: true,
     expirationTime: Date,
     keys: {
       p256dh: String,
