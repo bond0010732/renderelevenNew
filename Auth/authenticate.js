@@ -1253,40 +1253,90 @@ router.post('/verifyEmailAndOTP', async (req, res) => {
       }
     }
 
-    // ✅ Register device (Expo / APNS / WebPush)
-    const deviceQuery = {
-      $or: [
-        unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown"
-          ? { expoPushToken: unverifiedUser.expoPushToken }
-          : null,
-        unverifiedUser.apnsToken ? { apnsToken: unverifiedUser.apnsToken } : null,
-        unverifiedUser.webPushSubscription ? { webPushSubscription: unverifiedUser.webPushSubscription } : null,
-      ].filter(Boolean),
-    };
+    // ✅ Register device (Expo / APNS / WebPush) - FIXED & SAFE VERSION
 
-    let device = await Device.findOne(deviceQuery);
+// 1️⃣ Build query conditions safely
+const queryConditions = [];
 
-    if (!device) {
-      device = new Device({
-        expoPushToken: unverifiedUser.expoPushToken !== "unknown" ? unverifiedUser.expoPushToken : undefined,
-        apnsToken: unverifiedUser.apnsToken,
-        webPushSubscription: unverifiedUser.webPushSubscription,
-        users: [newUser._id],
-      });
-    } else {
-      if (unverifiedUser.expoPushToken && unverifiedUser.expoPushToken !== "unknown") {
-        device.expoPushToken = unverifiedUser.expoPushToken;
-      }
-      if (unverifiedUser.apnsToken) {
-        device.apnsToken = unverifiedUser.apnsToken;
-      }
-      if (unverifiedUser.webPushSubscription) {
-        device.webPushSubscription = unverifiedUser.webPushSubscription;
-      }
-      if (!device.users.some(u => u.toString() === newUser._id.toString())) {
-        device.users.push(newUser._id);
-      }
-    }
+if (
+  unverifiedUser.expoPushToken &&
+  unverifiedUser.expoPushToken !== "unknown"
+) {
+  queryConditions.push({
+    expoPushToken: unverifiedUser.expoPushToken,
+  });
+}
+
+if (unverifiedUser.apnsToken) {
+  queryConditions.push({
+    apnsToken: unverifiedUser.apnsToken,
+  });
+}
+
+// match only endpoint, NOT whole object
+if (unverifiedUser.webPushSubscription?.endpoint) {
+  queryConditions.push({
+    "webPushSubscription.endpoint":
+      unverifiedUser.webPushSubscription.endpoint,
+  });
+}
+
+// 2️⃣ Only search if we have something to search with
+let device = null;
+
+if (queryConditions.length > 0) {
+  device = await Device.findOne({ $or: queryConditions });
+}
+
+// 3️⃣ Create new device only if we have at least one valid token
+if (!device && queryConditions.length > 0) {
+  device = new Device({
+    expoPushToken:
+      unverifiedUser.expoPushToken &&
+      unverifiedUser.expoPushToken !== "unknown"
+        ? unverifiedUser.expoPushToken
+        : undefined,
+
+    apnsToken: unverifiedUser.apnsToken || undefined,
+
+    webPushSubscription:
+      unverifiedUser.webPushSubscription || undefined,
+
+    users: [newUser._id],
+  });
+}
+
+// 4️⃣ If we found a device → update it
+if (device) {
+  if (
+    unverifiedUser.expoPushToken &&
+    unverifiedUser.expoPushToken !== "unknown"
+  ) {
+    device.expoPushToken = unverifiedUser.expoPushToken;
+  }
+
+  if (unverifiedUser.apnsToken) {
+    device.apnsToken = unverifiedUser.apnsToken;
+  }
+
+  if (unverifiedUser.webPushSubscription) {
+    device.webPushSubscription = unverifiedUser.webPushSubscription;
+  }
+
+  if (
+    !device.users.some(
+      (u) => u.toString() === newUser._id.toString()
+    )
+  ) {
+    device.users.push(newUser._id);
+  }
+
+  await device.save();
+} else {
+  // No valid Expo/APNS/WebPush tokens
+  console.log("⚠️ No valid device tokens — skipping device creation.");
+}
+
 
     await device.save();
 
