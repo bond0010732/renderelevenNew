@@ -5,10 +5,12 @@ const Schema = mongoose.Schema;
 const deviceSchema = new Schema({
   expoPushToken: {
     type: String,
+    sparse: true,
   },
     apnsToken: { type: String, sparse: true }, 
     webPushSubscription: {
     endpoint: String,
+    sparse: true,
     expirationTime: Date,
     keys: {
       p256dh: String,
