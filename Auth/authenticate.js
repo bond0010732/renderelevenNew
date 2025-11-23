@@ -742,7 +742,6 @@ async function finalizeWithdrawal({ userId, totalAmount, amount, fullName, title
   return {
     message: 'Withdrawal finalized, email and notification sent successfully.',
     transactionId: transaction._id,
-    tickets,
   };
 }
 
