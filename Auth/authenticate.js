@@ -706,38 +706,38 @@ async function finalizeWithdrawal({ userId, totalAmount, amount, fullName, title
   await transporter.sendMail(emailOptions);
 
   // ---- Send Push Notification ----
-  const device = await Device.findOne({ users: { $elemMatch: { _id: userId } } });
-  if (!device) throw new Error('Device not found.');
+  // const device = await Device.findOne({ users: { $elemMatch: { _id: userId } } });
+  // if (!device) throw new Error('Device not found.');
 
-  if (!Expo.isExpoPushToken(device.expoPushToken)) {
-    throw new Error('Invalid Expo Push Token');
-  }
+  // if (!Expo.isExpoPushToken(device.expoPushToken)) {
+  //   throw new Error('Invalid Expo Push Token');
+  // }
 
- const notificationMessage = {
-  to: device.expoPushToken,
-  sound: 'default',
-  title: title || 'Withdrawal Notification',
-  body: message || `Your withdrawal of NGN ${parseFloat(totalAmount).toFixed(2)} was successful`,
-  data: {
-    screen: 'Wallet',  // 👈 add screen name here
-    amount: totalAmount,
-    type: 'withdrawal',
-  },
-};
+//  const notificationMessage = {
+//   to: device.expoPushToken,
+//   sound: 'default',
+//   title: title || 'Withdrawal Notification',
+//   body: message || `Your withdrawal of NGN ${parseFloat(totalAmount).toFixed(2)} was successful`,
+//   data: {
+//     screen: 'Wallet',  // 👈 add screen name here
+//     amount: totalAmount,
+//     type: 'withdrawal',
+//   },
+// };
 
 
-  const chunks = expo.chunkPushNotifications([notificationMessage]);
-  const tickets = [];
+  // const chunks = expo.chunkPushNotifications([notificationMessage]);
+  // const tickets = [];
 
-  for (const chunk of chunks) {
-    try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
-    } catch (err) {
-      console.error('Error sending notification chunk:', err);
-      throw new Error('Notification failed to send.');
-    }
-  }
+  // for (const chunk of chunks) {
+  //   try {
+  //     const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+  //     tickets.push(...ticketChunk);
+  //   } catch (err) {
+  //     console.error('Error sending notification chunk:', err);
+  //     throw new Error('Notification failed to send.');
+  //   }
+  // }
 
   return {
     message: 'Withdrawal finalized, email and notification sent successfully.',
