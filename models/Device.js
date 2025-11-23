@@ -16,12 +16,17 @@ const deviceSchema = new Schema({
       auth: String,
     },
   },
-  users: [{
-    _id: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-    },
-  }]
+   users: [{
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  }],
+  // users: [{
+  //   _id: {
+  //     type: Schema.Types.ObjectId,
+  //     ref: 'User',
+  //   },
+  // }]
+  
 });
 
 // Create a model from the schema
